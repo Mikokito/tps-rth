@@ -1,0 +1,52 @@
+export const tpsInfo = {
+  name: "TPS RTH Cikaret",
+  fullName: "Tempat Pengelolaan Sampah Ruang Terbuka Hijau Cikaret",
+  address: "Jl. Taman RTH No. 12, Kelurahan Cikaret",
+  district: "Kecamatan Bogor Selatan",
+  city: "Kota Bogor",
+  province: "Jawa Barat",
+  postalCode: "16132",
+  capacity: "2 ton/hari",
+  status: "Aktif",
+  established: "2019",
+  wasteTypes: ["Sampah Organik", "Plastik", "Kertas & Kardus", "Logam & Aluminium", "Kaca", "B3 Rumah Tangga"],
+  contact: {
+    phone: "+62 251-8765432",
+    whatsapp: "+6281234567890",
+    email: "tpsrth.cikaret@gmail.com",
+    instagram: "@tpsrth_cikaret",
+  },
+  operationalHours: [
+    { day: "Senin – Jumat", hours: "08.00 – 16.00 WIB" },
+    { day: "Sabtu", hours: "08.00 – 12.00 WIB" },
+    { day: "Minggu & Hari Libur", hours: "Tutup" },
+  ],
+  stats: {
+    nasabah: 1247,
+    sampahBulanan: 8.5,
+    jenisLayanan: 3,
+    mitraBankSampah: 5,
+    totalDaur: 42,
+  },
+  mission:
+    "Mengelola sampah berbasis komunitas melalui prinsip 3R (Reduce, Reuse, Recycle) demi terwujudnya lingkungan yang bersih, sehat, dan berkelanjutan.",
+  vision:
+    "Menjadi pusat pengelolaan sampah terpadu yang mandiri, edukatif, dan menjadi contoh bagi kelurahan lain di Kota Bogor.",
+  organization: [
+    { role: "Ketua", name: "Bapak Agus Santoso" },
+    { role: "Wakil Ketua", name: "Ibu Sri Wahyuni" },
+    { role: "Sekretaris", name: "Ibu Dewi Rahayu" },
+    { role: "Bendahara", name: "Bapak Hendra Kurniawan" },
+    { role: "Koordinator Lapangan", name: "Bapak Deni Saputra" },
+    { role: "Tim Edukasi", name: "Ibu Ratna Sari" },
+  ],
+  facilities: [
+    { name: "Area Pemilahan Sampah", desc: "Tempat pemilahan sampah berkapasitas 500 kg/hari" },
+    { name: "Gudang Penyimpanan", desc: "Ruang penyimpanan sampah terpilah sebelum disetor ke mitra" },
+    { name: "Unit Komposter", desc: "Pengolahan sampah organik menjadi kompos" },
+    { name: "Timbangan Digital", desc: "Timbangan presisi untuk pencatatan setoran nasabah" },
+    { name: "Kendaraan Angkut", desc: "1 unit mobil pick-up untuk penjemputan sampah" },
+    { name: "Ruang Edukasi", desc: "Ruang pertemuan dan pelatihan pengelolaan sampah" },
+  ],
+  gformUrl: "https://forms.gle/contoh",
+};
