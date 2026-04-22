@@ -26,34 +26,88 @@ export default function HomePage() {
           }}
         />
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 md:py-28">
-          <div className="max-w-2xl">
-            <span className="inline-flex items-center gap-1.5 text-sm font-medium bg-white/20 rounded-full px-3 py-1 mb-6">
-              <Leaf className="w-3.5 h-3.5" /> Pengelolaan Sampah Berbasis 3R
-            </span>
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight mb-5">
-              Kelola Sampah,
-              <br />
-              Jaga Lingkungan,
-              <br />
-              <span className="text-[#9AE6B4]">Dapat Manfaat</span>
-            </h1>
-            <p className="text-lg text-green-100 leading-relaxed mb-8 max-w-xl">
-              TPS RTH Cikaret hadir sebagai solusi pengelolaan sampah terpadu berbasis komunitas.
-              Pilah sampahmu, setorkan, dan dapatkan nilai ekonomis dari limbah rumah tangga Anda.
-            </p>
-            <div className="flex flex-wrap gap-3">
-              <Link
-                href="/cara-daftar"
-                className="inline-flex items-center gap-2 bg-white text-[#2F855A] font-semibold px-6 py-3 rounded-full hover:bg-green-50 transition-colors shadow-lg"
-              >
-                Daftar Sekarang <ArrowRight className="w-4 h-4" />
-              </Link>
-              <Link
-                href="/berita"
-                className="inline-flex items-center gap-2 bg-white/20 text-white font-semibold px-6 py-3 rounded-full hover:bg-white/30 transition-colors border border-white/30"
-              >
-                Lihat Berita <ChevronRight className="w-4 h-4" />
-              </Link>
+          <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
+            {/* Text content */}
+            <div>
+              <span className="inline-flex items-center gap-1.5 text-sm font-medium bg-white/20 rounded-full px-3 py-1 mb-6">
+                <Leaf className="w-3.5 h-3.5" /> Pengelolaan Sampah Berbasis 3R
+              </span>
+              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight mb-5">
+                Kelola Sampah,
+                <br />
+                Jaga Lingkungan,
+                <br />
+                <span className="text-[#9AE6B4]">Dapat Manfaat</span>
+              </h1>
+              <p className="text-lg text-green-100 leading-relaxed mb-8 max-w-xl">
+                TPS RTH Cikaret hadir sebagai solusi pengelolaan sampah terpadu berbasis komunitas.
+                Pilah sampahmu, setorkan, dan dapatkan nilai ekonomis dari limbah rumah tangga Anda.
+              </p>
+              <div className="flex flex-wrap gap-3">
+                <Link
+                  href="/cara-daftar"
+                  className="inline-flex items-center gap-2 bg-white text-[#2F855A] font-semibold px-6 py-3 rounded-full hover:bg-green-50 transition-colors shadow-lg"
+                >
+                  Daftar Sekarang <ArrowRight className="w-4 h-4" />
+                </Link>
+                <Link
+                  href="/edukasi"
+                  className="inline-flex items-center gap-2 bg-white/20 text-white font-semibold px-6 py-3 rounded-full hover:bg-white/30 transition-colors border border-white/30"
+                >
+                  Tips Pengelolaan Sampah <ChevronRight className="w-4 h-4" />
+                </Link>
+              </div>
+            </div>
+
+            {/* Illustration */}
+            <div className="flex items-center justify-center mt-4 lg:mt-0">
+              <div className="relative w-xl lg:w-160">
+                {/* <div className="absolute inset-0 rounded-full border border-white/15 bg-white/5" />
+                <div className="absolute inset-6 rounded-full border border-white/10 bg-white/5" />
+
+                <div className="absolute inset-14 rounded-full bg-white/15 border border-white/25 flex flex-col items-center justify-center text-center shadow-inner">
+                  <div className="text-4xl mb-1">♻️</div>
+                  <div className="text-sm font-bold leading-tight">TPS RTH</div>
+                  <div className="text-[11px] text-green-200 mt-0.5">Cikaret, Bogor</div>
+                </div>
+
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-white/25 rounded-xl px-3 py-2 border border-white/30 text-center shadow-lg backdrop-blur-sm whitespace-nowrap">
+                  <div className="font-bold text-sm">1.247+ Nasabah</div>
+                  <div className="text-[10px] text-green-200">Aktif terdaftar</div>
+                </div>
+
+                <div className="absolute top-1/2 -translate-y-1/2 -right-6 bg-white/25 rounded-xl px-3 py-2 border border-white/30 text-center shadow-lg backdrop-blur-sm">
+                  <div className="font-bold text-sm">8,5 ton</div>
+                  <div className="text-[10px] text-green-200">Per bulan</div>
+                </div>
+
+                <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 bg-white/25 rounded-xl px-3 py-2 border border-white/30 text-center shadow-lg backdrop-blur-sm whitespace-nowrap">
+                  <div className="font-bold text-sm">Reduce · Reuse · Recycle</div>
+                  <div className="text-[10px] text-green-200">Prinsip 3R</div>
+                </div>
+
+                <div className="absolute top-1/2 -translate-y-1/2 -left-6 bg-white/25 rounded-xl px-3 py-2 border border-white/30 text-center shadow-lg backdrop-blur-sm">
+                  <div className="font-bold text-sm">5 Mitra</div>
+                  <div className="text-[10px] text-green-200">Bank Sampah</div>
+                </div>
+
+                <div className="absolute top-14 right-5 w-2 h-2 rounded-full bg-white/40" />
+                <div className="absolute bottom-14 left-5 w-2 h-2 rounded-full bg-white/40" />
+                <div className="absolute top-6 right-16 w-1.5 h-1.5 rounded-full bg-white/25" />
+                <div className="absolute bottom-6 left-16 w-1.5 h-1.5 rounded-full bg-white/25" /> */}
+                <div className="aspect-16/11 rounded-2xl bg-[#092928] shadow-md md:aspect-square md:flex-1 2xl:aspect-16/11">
+                  <img
+                    src="/webp/tps.webp"
+                    alt="Main Building"
+                    className="object-fit h-full w-full rounded-2xl shadow-xl"
+                  />
+                </div>
+                <div className="absolute top-3 -translate-y-1/2 -right-6 bg-white/25 rounded-xl ps-10 pe-3 py-2 border border-white/30 shadow-lg backdrop-blur-sm">
+                  <div className="font-bold text-md">TPST-3R RTH PBPA</div>
+                  <div className="text-sm text-green-200">Paguyuban Bumi Puspiptek Asri</div>
+                </div>
+                <div className="absolute -top-2 right-48 text-3xl rounded-full select-none">📍</div>
+              </div>
             </div>
           </div>
         </div>
@@ -85,7 +139,7 @@ export default function HomePage() {
       </section>
 
       {/* About preview */}
-      <section className="py-16 bg-gray-50">
+      <section className="py-16 bg-[#FBFAF2]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid md:grid-cols-2 gap-12 items-center">
             <div>

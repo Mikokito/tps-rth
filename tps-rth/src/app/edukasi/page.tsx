@@ -99,7 +99,7 @@ export default function EdukasiPage() {
       </section>
 
       {/* Sorting guide */}
-      <section className="py-14 bg-gray-50">
+      <section className="py-14 bg-[#FBFAF2]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-10">
             <span className="text-sm font-semibold text-[#2F855A] uppercase tracking-wider">Panduan Pemilahan</span>
@@ -171,7 +171,7 @@ export default function EdukasiPage() {
 
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {recycleSteps.map((s, idx) => (
-              <div key={s.step} className="relative bg-gray-50 rounded-2xl p-6 border border-gray-100">
+              <div key={s.step} className="relative bg-[#FBFAF2] rounded-2xl p-6 border border-gray-100">
                 <div className="flex items-start gap-4">
                   <div className="w-10 h-10 bg-[#2F855A] text-white rounded-xl flex items-center justify-center font-bold text-sm flex-shrink-0">
                     {s.step}

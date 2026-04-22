@@ -10,15 +10,26 @@ const devTeam = [
   { name: "Tim TPS RTH", role: "Pengelola TPS", email: tpsInfo.contact.email },
 ];
 
+const subjectOptions = ["Layanan", "Keluhan", "Kerjasama", "Pendaftaran", "Lainnya"];
+
+const inputClass =
+  "w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#2F855A] focus:border-transparent transition-shadow bg-white";
+
+function RequiredMark() {
+  return <span className="text-red-500 ml-0.5">*</span>;
+}
+
 export default function KontakPage() {
-  const [form, setForm] = useState({ nama: "", email: "", pesan: "" });
+  const [form, setForm] = useState({ nama: "", email: "", whatsapp: "", subjek: "", pesan: "" });
   const [sent, setSent] = useState(false);
 
-  function handleSubmit(e: React.FormEvent) {
+  function handleSubmit(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault();
-    const subject = encodeURIComponent(`Pesan dari ${form.nama} - TPS RTH Website`);
-    const body = encodeURIComponent(`Nama: ${form.nama}\nEmail: ${form.email}\n\nPesan:\n${form.pesan}`);
-    window.location.href = `mailto:${tpsInfo.contact.email}?subject=${subject}&body=${body}`;
+    const emailSubject = encodeURIComponent(`[${form.subjek}] Pesan dari ${form.nama} - TPS RTH Website`);
+    const body = encodeURIComponent(
+      `Nama: ${form.nama}\nEmail: ${form.email}${form.whatsapp ? `\nWhatsApp: ${form.whatsapp}` : ""}\nSubjek: ${form.subjek}\n\nPesan:\n${form.pesan}`
+    );
+    window.location.href = `mailto:${tpsInfo.contact.email}?subject=${emailSubject}&body=${body}`;
     setSent(true);
   }
 
@@ -49,7 +60,7 @@ export default function KontakPage() {
                 <h2 className="text-2xl font-bold text-gray-900 mb-6">Informasi Kontak</h2>
                 <div className="space-y-5">
                   <div className="flex gap-4">
-                    <div className="w-10 h-10 bg-[#F0FFF4] rounded-xl flex items-center justify-center flex-shrink-0">
+                    <div className="w-10 h-10 bg-[#F0FFF4] rounded-xl flex items-center justify-center shrink-0">
                       <MapPin className="w-5 h-5 text-[#2F855A]" />
                     </div>
                     <div>
@@ -61,7 +72,7 @@ export default function KontakPage() {
                     </div>
                   </div>
                   <div className="flex gap-4">
-                    <div className="w-10 h-10 bg-[#F0FFF4] rounded-xl flex items-center justify-center flex-shrink-0">
+                    <div className="w-10 h-10 bg-[#F0FFF4] rounded-xl flex items-center justify-center shrink-0">
                       <Phone className="w-5 h-5 text-[#2F855A]" />
                     </div>
                     <div>
@@ -72,7 +83,7 @@ export default function KontakPage() {
                     </div>
                   </div>
                   <div className="flex gap-4">
-                    <div className="w-10 h-10 bg-[#F0FFF4] rounded-xl flex items-center justify-center flex-shrink-0">
+                    <div className="w-10 h-10 bg-[#F0FFF4] rounded-xl flex items-center justify-center shrink-0">
                       <Mail className="w-5 h-5 text-[#2F855A]" />
                     </div>
                     <div>
@@ -83,7 +94,7 @@ export default function KontakPage() {
                     </div>
                   </div>
                   <div className="flex gap-4">
-                    <div className="w-10 h-10 bg-green-50 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <div className="w-10 h-10 bg-green-50 rounded-xl flex items-center justify-center shrink-0">
                       <MessageSquare className="w-5 h-5 text-green-500" />
                     </div>
                     <div>
@@ -106,7 +117,7 @@ export default function KontakPage() {
                 <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
                   <Clock className="w-5 h-5 text-[#2F855A]" /> Jam Operasional
                 </h3>
-                <div className="bg-gray-50 rounded-2xl overflow-hidden">
+                <div className="bg-[#FBFAF2] rounded-2xl overflow-hidden">
                   {tpsInfo.operationalHours.map((h, idx) => (
                     <div
                       key={h.day}
@@ -141,73 +152,125 @@ export default function KontakPage() {
 
             {/* Form */}
             <div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">Kirim Pesan</h2>
-              {sent ? (
-                <div className="bg-[#F0FFF4] border border-green-200 rounded-2xl p-8 text-center">
-                  <CheckCircle className="w-12 h-12 text-[#2F855A] mx-auto mb-3" />
-                  <h3 className="font-bold text-gray-900 text-lg mb-2">Pesan Terkirim!</h3>
-                  <p className="text-gray-600 text-sm">
-                    Klien email Anda dibuka. Kami akan segera merespons pesan Anda.
-                  </p>
-                  <button
-                    onClick={() => setSent(false)}
-                    className="mt-4 text-sm text-[#2F855A] font-semibold hover:underline"
-                  >
-                    Kirim pesan lain
-                  </button>
-                </div>
-              ) : (
-                <form onSubmit={handleSubmit} className="space-y-5">
-                  <div>
-                    <label htmlFor="nama" className="block text-sm font-semibold text-gray-700 mb-1.5">
-                      Nama Lengkap
-                    </label>
-                    <input
-                      id="nama"
-                      type="text"
-                      required
-                      value={form.nama}
-                      onChange={(e) => setForm({ ...form, nama: e.target.value })}
-                      placeholder="Masukkan nama lengkap Anda"
-                      className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#2F855A] focus:border-transparent transition-shadow"
-                    />
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">Kirim Pesan</h2>
+              <p className="text-sm text-gray-500 mb-6">
+                Kolom bertanda <span className="text-red-500 font-semibold">*</span> wajib diisi.
+              </p>
+
+              <div className="bg-[#FBFAF2] rounded-2xl p-6 border border-gray-100 space-y-0">
+                {sent ? (
+                  <div className="bg-[#F0FFF4] border border-green-200 rounded-2xl p-8 text-center">
+                    <CheckCircle className="w-12 h-12 text-[#2F855A] mx-auto mb-3" />
+                    <h3 className="font-bold text-gray-900 text-lg mb-2">Pesan Terkirim!</h3>
+                    <p className="text-gray-600 text-sm">
+                      Klien email Anda dibuka. Kami akan segera merespons pesan Anda.
+                    </p>
+                    <button
+                      onClick={() => setSent(false)}
+                      className="mt-4 text-sm text-[#2F855A] font-semibold hover:underline"
+                    >
+                      Kirim pesan lain
+                    </button>
                   </div>
-                  <div>
-                    <label htmlFor="email" className="block text-sm font-semibold text-gray-700 mb-1.5">
-                      Alamat Email
-                    </label>
-                    <input
-                      id="email"
-                      type="email"
-                      required
-                      value={form.email}
-                      onChange={(e) => setForm({ ...form, email: e.target.value })}
-                      placeholder="email@contoh.com"
-                      className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#2F855A] focus:border-transparent transition-shadow"
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="pesan" className="block text-sm font-semibold text-gray-700 mb-1.5">
-                      Pesan
-                    </label>
-                    <textarea
-                      id="pesan"
-                      required
-                      rows={5}
-                      value={form.pesan}
-                      onChange={(e) => setForm({ ...form, pesan: e.target.value })}
-                      placeholder="Tulis pertanyaan atau pesan Anda di sini..."
-                      className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#2F855A] focus:border-transparent transition-shadow resize-none"
-                    />
-                  </div>
-                  <button
-                    type="submit"
-                    className="w-full flex items-center justify-center gap-2 bg-[#2F855A] text-white font-semibold py-3 rounded-xl hover:bg-[#276749] transition-colors shadow-sm"
-                  >
-                    <Send className="w-4 h-4" /> Kirim Pesan
-                  </button>
-                </form>
-              )}
+                ) : (
+                  <form onSubmit={handleSubmit} className="space-y-5">
+                    {/* Nama */}
+                    <div>
+                      <label htmlFor="nama" className="block text-sm font-semibold text-gray-700 mb-1.5">
+                        Nama Lengkap <RequiredMark />
+                      </label>
+                      <input
+                        id="nama"
+                        type="text"
+                        required
+                        value={form.nama}
+                        onChange={(e) => setForm({ ...form, nama: e.target.value })}
+                        placeholder="Masukkan nama lengkap Anda"
+                        className={inputClass}
+                      />
+                    </div>
+
+                    {/* Email */}
+                    <div>
+                      <label htmlFor="email" className="block text-sm font-semibold text-gray-700 mb-1.5">
+                        Alamat Email <RequiredMark />
+                      </label>
+                      <input
+                        id="email"
+                        type="email"
+                        required
+                        value={form.email}
+                        onChange={(e) => setForm({ ...form, email: e.target.value })}
+                        placeholder="email@contoh.com"
+                        className={inputClass}
+                      />
+                    </div>
+
+                    {/* WhatsApp (optional) */}
+                    <div>
+                      <label htmlFor="whatsapp" className="block text-sm font-semibold text-gray-700 mb-1.5">
+                        Nomor WhatsApp
+                        <span className="text-gray-400 font-normal ml-1">(opsional)</span>
+                      </label>
+                      <div className="relative">
+                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm text-gray-400 font-medium">
+                          +62
+                        </span>
+                        <input
+                          id="whatsapp"
+                          type="tel"
+                          value={form.whatsapp}
+                          onChange={(e) => setForm({ ...form, whatsapp: e.target.value })}
+                          placeholder="812-3456-7890"
+                          className={`${inputClass} pl-12`}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Subjek */}
+                    <div>
+                      <label htmlFor="subjek" className="block text-sm font-semibold text-gray-700 mb-1.5">
+                        Subjek <RequiredMark />
+                      </label>
+                      <select
+                        id="subjek"
+                        required
+                        value={form.subjek}
+                        onChange={(e) => setForm({ ...form, subjek: e.target.value })}
+                        className={`${inputClass} appearance-none cursor-pointer`}
+                      >
+                        <option value="" disabled>Pilih subjek pesan Anda</option>
+                        {subjectOptions.map((opt) => (
+                          <option key={opt} value={opt}>{opt}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Pesan */}
+                    <div>
+                      <label htmlFor="pesan" className="block text-sm font-semibold text-gray-700 mb-1.5">
+                        Pesan <RequiredMark />
+                      </label>
+                      <textarea
+                        id="pesan"
+                        required
+                        rows={5}
+                        value={form.pesan}
+                        onChange={(e) => setForm({ ...form, pesan: e.target.value })}
+                        placeholder="Tulis pertanyaan atau pesan Anda di sini..."
+                        className={`${inputClass} resize-none`}
+                      />
+                    </div>
+
+                    <button
+                      type="submit"
+                      className="w-full flex items-center justify-center gap-2 bg-[#2F855A] text-white font-semibold py-3 rounded-xl hover:bg-[#276749] transition-colors shadow-sm"
+                    >
+                      <Send className="w-4 h-4" /> Kirim Pesan
+                    </button>
+                  </form>
+                )}
+              </div>
 
               {/* Dev team */}
               <div className="mt-8 pt-8 border-t border-gray-100">
@@ -215,7 +278,7 @@ export default function KontakPage() {
                 <div className="space-y-3">
                   {devTeam.map((m) => (
                     <div key={m.name} className="flex items-center gap-3 bg-gray-50 rounded-xl p-3">
-                      <div className="w-9 h-9 bg-[#F0FFF4] rounded-full flex items-center justify-center text-lg flex-shrink-0">
+                      <div className="w-9 h-9 bg-[#F0FFF4] rounded-full flex items-center justify-center text-lg shrink-0">
                         👤
                       </div>
                       <div>
