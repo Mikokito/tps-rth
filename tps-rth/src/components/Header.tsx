@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { useState } from "react";
-import { Menu, X, Leaf } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { Menu, X, Leaf, LogOut, UserCheck } from "lucide-react";
+import { getSession, clearSession, type SessionUser } from "@/lib/mockAuth";
 
 const navLinks = [
   { href: "/", label: "Beranda" },
@@ -16,7 +17,20 @@ const navLinks = [
 
 export default function Header() {
   const [isOpen, setIsOpen] = useState(false);
+  const [session, setSession] = useState<SessionUser | null>(null);
   const pathname = usePathname();
+  const router = useRouter();
+
+  useEffect(() => {
+    setSession(getSession());
+  }, [pathname]);
+
+  function handleLogout() {
+    clearSession();
+    setSession(null);
+    setIsOpen(false);
+    router.push("/");
+  }
 
   return (
     <header className="sticky top-0 z-50 bg-white border-b border-green-100 shadow-sm">
@@ -53,6 +67,42 @@ export default function Header() {
             })}
           </nav>
 
+          {/* Desktop auth */}
+          <div className="hidden md:flex items-center gap-2">
+            {session ? (
+              <>
+                <div className="flex items-center gap-1.5 text-sm text-gray-600 bg-[#F0FFF4] rounded-lg px-3 py-2">
+                  <UserCheck className="w-4 h-4 text-[#2F855A]" />
+                  <span className="font-medium text-[#2F855A]">
+                    {session.nama.split(" ")[0]}
+                  </span>
+                </div>
+                <button
+                  onClick={handleLogout}
+                  className="flex items-center gap-1.5 text-sm font-medium text-gray-500 hover:text-red-500 px-3 py-2 rounded-lg hover:bg-red-50 transition-colors"
+                >
+                  <LogOut className="w-4 h-4" />
+                  Keluar
+                </button>
+              </>
+            ) : (
+              <>
+                <Link
+                  href="/login"
+                  className="text-sm font-semibold text-[#2F855A] px-4 py-2 rounded-lg border border-[#2F855A] hover:bg-[#F0FFF4] transition-colors"
+                >
+                  Masuk
+                </Link>
+                <Link
+                  href="/signup"
+                  className="text-sm font-semibold text-white bg-[#2F855A] px-4 py-2 rounded-lg hover:bg-[#276749] transition-colors"
+                >
+                  Daftar
+                </Link>
+              </>
+            )}
+          </div>
+
           {/* Mobile toggle */}
           <button
             onClick={() => setIsOpen(!isOpen)}
@@ -86,6 +136,42 @@ export default function Header() {
               );
             })}
           </nav>
+
+          {/* Mobile auth */}
+          <div className="px-4 pt-3 border-t border-gray-50 mt-2">
+            {session ? (
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-sm text-[#2F855A] font-medium">
+                  <UserCheck className="w-4 h-4" />
+                  Halo, {session.nama.split(" ")[0]}
+                </div>
+                <button
+                  onClick={handleLogout}
+                  className="flex items-center gap-1.5 text-sm font-medium text-red-500 hover:text-red-600"
+                >
+                  <LogOut className="w-4 h-4" />
+                  Keluar
+                </button>
+              </div>
+            ) : (
+              <div className="flex gap-2">
+                <Link
+                  href="/login"
+                  onClick={() => setIsOpen(false)}
+                  className="flex-1 text-center text-sm font-semibold text-[#2F855A] py-2 rounded-lg border border-[#2F855A] hover:bg-[#F0FFF4] transition-colors"
+                >
+                  Masuk
+                </Link>
+                <Link
+                  href="/signup"
+                  onClick={() => setIsOpen(false)}
+                  className="flex-1 text-center text-sm font-semibold text-white bg-[#2F855A] py-2 rounded-lg hover:bg-[#276749] transition-colors"
+                >
+                  Daftar
+                </Link>
+              </div>
+            )}
+          </div>
         </div>
       )}
     </header>

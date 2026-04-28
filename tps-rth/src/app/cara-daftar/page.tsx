@@ -117,7 +117,7 @@ export default function CaraDaftarPage() {
               { emoji: "📋", req: "Mengisi formulir pendaftaran dengan data yang valid" },
               { emoji: "✅", req: "Menyetujui tata tertib dan peraturan bank sampah" },
             ].map((item) => (
-              <div key={item.req} className="flex gap-3 items-start bg-[#FBFAF2] rounded-xl p-4 border border-gray-100">
+              <div key={item.req} className="flex gap-3 items-start bg-[#FBFAF2] rounded-xl p-4 border border-[#E6DFAF]">
                 <span className="text-xl shrink-0">{item.emoji}</span>
                 <p className="text-sm text-gray-700 leading-relaxed">{item.req}</p>
               </div>
@@ -195,7 +195,7 @@ export default function CaraDaftarPage() {
 
           <div className="space-y-3">
             {faqs.map((faq, idx) => (
-              <div key={idx} className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm">
+              <div key={idx} className="bg-[#FBFAF2] rounded-2xl border border-[#E6DFAF] overflow-hidden shadow-sm">
                 <button
                   onClick={() => setOpenFaq(openFaq === idx ? null : idx)}
                   className="w-full flex items-center justify-between px-6 py-4 text-left hover:bg-gray-50 transition-colors"

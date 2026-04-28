@@ -171,7 +171,7 @@ export default function EdukasiPage() {
 
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {recycleSteps.map((s, idx) => (
-              <div key={s.step} className="relative bg-[#FBFAF2] rounded-2xl p-6 border border-gray-100">
+              <div key={s.step} className="relative bg-[#FBFAF2] rounded-2xl p-6 border border-[#E6DFAF]">
                 <div className="flex items-start gap-4">
                   <div className="w-10 h-10 bg-[#2F855A] text-white rounded-xl flex items-center justify-center font-bold text-sm flex-shrink-0">
                     {s.step}
@@ -208,7 +208,7 @@ export default function EdukasiPage() {
               { emoji: "💡", tip: "Pisahkan baterai bekas ke tempat khusus B3, jangan buang sembarangan." },
               { emoji: "📱", tip: "Donasikan gadget lama yang masih berfungsi daripada langsung dibuang." },
             ].map((t) => (
-              <div key={t.tip} className="flex gap-3 bg-white rounded-xl p-4 border border-green-100">
+              <div key={t.tip} className="flex gap-3 bg-white shadow-sm rounded-xl p-4 border border-green-100">
                 <span className="text-2xl flex-shrink-0">{t.emoji}</span>
                 <p className="text-sm text-gray-700 leading-relaxed">{t.tip}</p>
               </div>

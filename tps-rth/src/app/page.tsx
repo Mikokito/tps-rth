@@ -95,14 +95,14 @@ export default function HomePage() {
                 <div className="absolute bottom-14 left-5 w-2 h-2 rounded-full bg-white/40" />
                 <div className="absolute top-6 right-16 w-1.5 h-1.5 rounded-full bg-white/25" />
                 <div className="absolute bottom-6 left-16 w-1.5 h-1.5 rounded-full bg-white/25" /> */}
-                <div className="aspect-16/11 rounded-2xl bg-[#092928] shadow-md md:aspect-square md:flex-1 2xl:aspect-16/11">
+                <div className="aspect-16/11 rounded-2xl bg-[#092928] shadow-lg md:aspect-square md:flex-1 2xl:aspect-16/11">
                   <img
                     src="/webp/tps.webp"
                     alt="Main Building"
                     className="object-fit h-full w-full rounded-2xl shadow-xl"
                   />
                 </div>
-                <div className="absolute top-3 -translate-y-1/2 -right-6 bg-white/25 rounded-xl ps-10 pe-3 py-2 border border-white/30 shadow-lg backdrop-blur-sm">
+                <div className="absolute top-3 -translate-y-1/2 -right-6 bg-white/25 shadow-md rounded-xl ps-10 pe-3 py-2 border border-white/30 shadow-lg backdrop-blur-sm">
                   <div className="font-bold text-md">TPST-3R RTH PBPA</div>
                   <div className="text-sm text-green-200">Paguyuban Bumi Puspiptek Asri</div>
                 </div>
@@ -124,7 +124,7 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             {stats.map((s) => (
-              <div key={s.label} className={`${s.bg} rounded-2xl p-5 flex items-center gap-4`}>
+              <div key={s.label} className={`${s.bg} shadow-sm rounded-2xl p-5 flex items-center gap-4`}>
                 <div className={`w-12 h-12 bg-white rounded-xl flex items-center justify-center shadow-sm flex-shrink-0`}>
                   <s.icon className={`w-6 h-6 ${s.color}`} />
                 </div>

@@ -122,7 +122,7 @@ export default function TentangPage() {
             {/* Info table */}
             <div>
               <h2 className="text-2xl font-bold text-gray-900 mb-4">Informasi TPS</h2>
-              <div className="bg-gray-50 rounded-2xl p-6 border border-gray-100 space-y-0">
+              <div className="bg-[#FBFAF2] rounded-2xl p-6 border border-[#E6DFAF] space-y-0">
                 {[
                   { label: "Nama TPS", value: tpsInfo.name },
                   { label: "Status", value: tpsInfo.status },
@@ -134,7 +134,7 @@ export default function TentangPage() {
                 ].map((item, idx, arr) => (
                   <div
                     key={item.label}
-                    className={`flex justify-between items-start py-3 gap-4 ${idx < arr.length - 1 ? "border-b border-gray-100" : ""}`}
+                    className={`flex justify-between items-start py-3 gap-4 ${idx < arr.length - 1 ? "border-b border-[#E6DFAF]" : ""}`}
                   >
                     <dt className="text-sm text-gray-500 flex-shrink-0 w-32">{item.label}</dt>
                     <dd className="text-sm font-medium text-gray-900 text-right">{item.value}</dd>
@@ -202,7 +202,7 @@ export default function TentangPage() {
           </div>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             {dataStats.map((s) => (
-              <div key={s.label} className={`${s.bg} rounded-2xl p-6 text-center`}>
+              <div key={s.label} className={`${s.bg} shadow-sm rounded-2xl p-6 text-center`}>
                 <div className={`text-3xl font-bold ${s.color} mb-1`}>{s.value}</div>
                 <div className="text-sm text-gray-600">{s.label}</div>
               </div>

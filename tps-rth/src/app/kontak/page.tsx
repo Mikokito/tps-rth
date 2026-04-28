@@ -13,7 +13,7 @@ const devTeam = [
 const subjectOptions = ["Layanan", "Keluhan", "Kerjasama", "Pendaftaran", "Lainnya"];
 
 const inputClass =
-  "w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#2F855A] focus:border-transparent transition-shadow bg-white";
+  "w-full px-4 py-3 rounded-xl border border-[#E6DFAF] text-sm focus:outline-none focus:ring-2 focus:ring-[#2F855A] focus:border-transparent transition-shadow bg-white";
 
 function RequiredMark() {
   return <span className="text-red-500 ml-0.5">*</span>;
@@ -117,12 +117,12 @@ export default function KontakPage() {
                 <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
                   <Clock className="w-5 h-5 text-[#2F855A]" /> Jam Operasional
                 </h3>
-                <div className="bg-[#FBFAF2] rounded-2xl overflow-hidden">
+                <div className="bg-[#FBFAF2] shadow-sm rounded-2xl overflow-hidden">
                   {tpsInfo.operationalHours.map((h, idx) => (
                     <div
                       key={h.day}
                       className={`flex justify-between px-5 py-3 text-sm ${
-                        idx < tpsInfo.operationalHours.length - 1 ? "border-b border-gray-100" : ""
+                        idx < tpsInfo.operationalHours.length - 1 ? "border-b border-[#E6DFAF]" : ""
                       } ${h.hours === "Tutup" ? "text-red-500" : "text-gray-700"}`}
                     >
                       <span className="font-medium">{h.day}</span>
@@ -157,7 +157,7 @@ export default function KontakPage() {
                 Kolom bertanda <span className="text-red-500 font-semibold">*</span> wajib diisi.
               </p>
 
-              <div className="bg-[#FBFAF2] rounded-2xl p-6 border border-gray-100 space-y-0">
+              <div className="bg-[#FBFAF2] shadow-sm rounded-2xl p-6 border border-[#E6DFAF] space-y-0">
                 {sent ? (
                   <div className="bg-[#F0FFF4] border border-green-200 rounded-2xl p-8 text-center">
                     <CheckCircle className="w-12 h-12 text-[#2F855A] mx-auto mb-3" />
