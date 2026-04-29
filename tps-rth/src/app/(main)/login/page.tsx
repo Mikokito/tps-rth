@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Mail, Lock, Eye, EyeOff, Leaf, CheckCircle } from "lucide-react";
 import FormInput from "@/components/FormInput";
-import { findByEmail, verifyPassword, setSession } from "@/lib/mockAuth";
+import { findByEmail, verifyPassword, setSession, seedAdminUser } from "@/lib/mockAuth";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -16,6 +16,7 @@ export default function LoginPage() {
   const [justRegistered, setJustRegistered] = useState(false);
 
   useEffect(() => {
+    seedAdminUser();
     const flag = sessionStorage.getItem("signup_success");
     if (flag) {
       setJustRegistered(true);
@@ -51,7 +52,7 @@ export default function LoginPage() {
       }
       const { passwordHash: _, ...sessionData } = user;
       setSession(sessionData);
-      router.push("/");
+      router.push(sessionData.role === "admin" ? "/admin/dashboard" : "/");
     }, 500);
   }
 

@@ -9,6 +9,7 @@ export interface NewsItem {
   date: string;
   bgColor: string;
   emoji: string;
+  imageUrl?: string;
 }
 
 export const newsData: NewsItem[] = [

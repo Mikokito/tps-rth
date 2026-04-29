@@ -8,6 +8,7 @@ export interface User {
   alamat: string;
   passwordHash: string;
   createdAt: string;
+  role: "admin" | "user";
 }
 
 export type SessionUser = Omit<User, "passwordHash">;
@@ -39,7 +40,7 @@ export function emailExists(email: string): boolean {
 }
 
 export function hashPassword(password: string): string {
-  return btoa(unescape(encodeURIComponent(password)));
+  return btoa(encodeURIComponent(password));
 }
 
 export function verifyPassword(password: string, hash: string): boolean {
@@ -68,4 +69,26 @@ export function getSession(): SessionUser | null {
 export function clearSession(): void {
   if (typeof window === "undefined") return;
   localStorage.removeItem(SESSION_KEY);
+}
+
+export function isAdmin(): boolean {
+  return getSession()?.role === "admin";
+}
+
+export function seedAdminUser(): void {
+  if (typeof window === "undefined") return;
+  if (!emailExists("admin@tpsrth.com")) {
+    saveUser({
+      id: "admin-001",
+      nama: "Admin TPS RTH",
+      rw: "01",
+      rt: "01",
+      email: "admin@tpsrth.com",
+      hp: "081234567890",
+      alamat: "TPS RTH Cikaret",
+      passwordHash: hashPassword("admin123"),
+      createdAt: new Date().toISOString(),
+      role: "admin",
+    });
+  }
 }

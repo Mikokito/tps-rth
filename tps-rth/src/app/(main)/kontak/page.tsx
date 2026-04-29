@@ -36,7 +36,7 @@ export default function KontakPage() {
   return (
     <>
       {/* Page hero */}
-      <section className="bg-[#2F855A] text-white py-14">
+      <section className="px-4 bg-[#2F855A] text-white py-14">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center gap-2 text-green-200 text-sm mb-3">
             <Link href="/" className="hover:text-white transition-colors">Beranda</Link>
@@ -51,7 +51,7 @@ export default function KontakPage() {
       </section>
 
       {/* Contact info + form */}
-      <section className="py-14 bg-white">
+      <section className="px-4 py-14 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid lg:grid-cols-2 gap-12">
             {/* Info */}

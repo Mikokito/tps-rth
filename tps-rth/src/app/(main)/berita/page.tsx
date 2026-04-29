@@ -34,7 +34,7 @@ export default function BeritaPage() {
   return (
     <>
       {/* Page hero */}
-      <section className="bg-[#2F855A] text-white py-14">
+      <section className="px-4 bg-[#2F855A] text-white py-14">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center gap-2 text-green-200 text-sm mb-3">
             <Link href="/" className="hover:text-white transition-colors">Beranda</Link>
@@ -49,7 +49,7 @@ export default function BeritaPage() {
       </section>
 
       {/* Filter & grid */}
-      <section className="py-12 bg-[#FBFAF2]">
+      <section className="px-4 py-12 bg-[#FBFAF2]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Filter tabs */}
           <div className="flex gap-2 mb-8 overflow-x-auto pb-1">
@@ -69,13 +69,13 @@ export default function BeritaPage() {
           </div>
 
           {/* Count */}
-          <p className="text-sm text-gray-500 mb-6">
+          <p className="px-4 text-sm text-gray-500 mb-6">
             Menampilkan <span className="font-semibold text-gray-900">{filtered.length}</span> artikel
           </p>
 
           {/* Grid */}
           {paginated.length > 0 ? (
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="px-4 grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {paginated.map((news) => (
                 <NewsCard key={news.id} news={news} />
               ))}

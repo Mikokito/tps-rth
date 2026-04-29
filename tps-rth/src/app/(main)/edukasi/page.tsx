@@ -45,7 +45,7 @@ export default function EdukasiPage() {
   return (
     <>
       {/* Page hero */}
-      <section className="bg-[#2F855A] text-white py-14">
+      <section className="px-4 bg-[#2F855A] text-white py-14">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center gap-2 text-green-200 text-sm mb-3">
             <Link href="/" className="hover:text-white transition-colors">Beranda</Link>
@@ -60,7 +60,7 @@ export default function EdukasiPage() {
       </section>
 
       {/* Why it matters */}
-      <section className="py-14 bg-white">
+      <section className="px-4 py-14 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div>
@@ -99,7 +99,7 @@ export default function EdukasiPage() {
       </section>
 
       {/* Sorting guide */}
-      <section className="py-14 bg-[#FBFAF2]">
+      <section className="px-4 py-14 bg-[#FBFAF2]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-10">
             <span className="text-sm font-semibold text-[#2F855A] uppercase tracking-wider">Panduan Pemilahan</span>
@@ -159,7 +159,7 @@ export default function EdukasiPage() {
       </section>
 
       {/* Recycle infographic */}
-      <section className="py-14 bg-white">
+      <section className="px-4 py-14 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-10">
             <span className="text-sm font-semibold text-[#2F855A] uppercase tracking-wider">Alur Daur Ulang</span>
@@ -194,7 +194,7 @@ export default function EdukasiPage() {
       </section>
 
       {/* Quick tips */}
-      <section className="py-14 bg-[#F0FFF4]">
+      <section className="px-4 py-14 bg-[#F0FFF4]">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-8">
             <h2 className="text-2xl font-bold text-gray-900">Tips Cepat Pengelolaan Sampah</h2>

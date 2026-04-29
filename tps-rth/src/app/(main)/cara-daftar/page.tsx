@@ -86,7 +86,7 @@ export default function CaraDaftarPage() {
   return (
     <>
       {/* Page hero */}
-      <section className="bg-[#2F855A] text-white py-14">
+      <section className="px-4 bg-[#2F855A] text-white py-14">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center gap-2 text-green-200 text-sm mb-3">
             <Link href="/" className="hover:text-white transition-colors">Beranda</Link>
@@ -101,7 +101,7 @@ export default function CaraDaftarPage() {
       </section>
 
       {/* Requirements — placed at top */}
-      <section className="py-14 bg-white">
+      <section className="px-4 py-14 bg-white">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-8">
             <span className="text-sm font-semibold text-[#2F855A] uppercase tracking-wider">Sebelum Mendaftar</span>
@@ -127,7 +127,7 @@ export default function CaraDaftarPage() {
       </section>
 
       {/* Steps */}
-      <section className="py-16 bg-[#FBFAF2]">
+      <section className="px-4 py-16 bg-[#FBFAF2]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <span className="text-sm font-semibold text-[#2F855A] uppercase tracking-wider">Panduan</span>
@@ -186,7 +186,7 @@ export default function CaraDaftarPage() {
       </section>
 
       {/* FAQ */}
-      <section className="py-14 bg-white">
+      <section className="px-4 py-14 bg-white">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-10">
             <span className="text-sm font-semibold text-[#2F855A] uppercase tracking-wider">FAQ</span>
@@ -217,7 +217,7 @@ export default function CaraDaftarPage() {
           </div>
 
           {/* WhatsApp CTA */}
-          <div className="mt-10 bg-[#2F855A] rounded-2xl p-6 text-white text-center">
+          <div className="px-4 mt-10 bg-[#2F855A] rounded-2xl p-6 text-white text-center">
             <div className="text-3xl mb-2">💬</div>
             <h3 className="font-bold text-lg mb-2">Masih ada pertanyaan?</h3>
             <p className="text-green-100 text-sm mb-4">

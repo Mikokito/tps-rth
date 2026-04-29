@@ -79,6 +79,7 @@ export default function SignupPage() {
         alamat: form.alamat.trim(),
         passwordHash: hashPassword(form.password),
         createdAt: new Date().toISOString(),
+        role: "user",
       });
 
       sessionStorage.setItem("signup_success", "1");
@@ -118,10 +119,10 @@ export default function SignupPage() {
               <p className="mt-3 text-sm text-gray-600 max-w-70">
                 Daftar gratis sebagai nasabah TPS RTH dan mulai berkontribusi untuk lingkungan yang lebih bersih.
               </p>
-              <div className="mt-10 flex justify-between items-center text-[10px] tracking-[0.2em] uppercase font-mono text-gray-500 border-t border-gray-400/30 pt-3">
-                <span>[ HERO / LIFESTYLE ]</span>
-                <span>PLACEHOLDER · DROP IMAGE HERE</span>
-              </div>
+            </div>
+            <div className="mt-10 flex justify-between items-center text-[10px] tracking-[0.2em] uppercase font-mono text-gray-500 border-t border-gray-400/30 pt-3">
+              <span>[ HERO / LIFESTYLE ]</span>
+              <span>PLACEHOLDER · DROP IMAGE HERE</span>
             </div>
           </div>
         </div>

@@ -17,7 +17,7 @@ export default function HomePage() {
   return (
     <>
       {/* Hero */}
-      <section className="relative bg-[#2F855A] text-white overflow-hidden">
+      <section className="relative px-4 bg-[#2F855A] text-white overflow-hidden">
         <div
           className="absolute inset-0 opacity-10"
           style={{
@@ -25,7 +25,7 @@ export default function HomePage() {
               "radial-gradient(circle at 20% 80%, #48BB78 0%, transparent 50%), radial-gradient(circle at 80% 20%, #276749 0%, transparent 50%)",
           }}
         />
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 md:py-28">
+        <div className="relative max-w-7xl mx-auto px-4 py-20 md:py-28">
           <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
             {/* Text content */}
             <div>
@@ -46,13 +46,13 @@ export default function HomePage() {
               <div className="flex flex-wrap gap-3">
                 <Link
                   href="/cara-daftar"
-                  className="inline-flex items-center gap-2 bg-white text-[#2F855A] font-semibold px-6 py-3 rounded-full hover:bg-green-50 transition-colors shadow-lg"
+                  className="inline-flex items-center gap-2 bg-white text-[#2F855A] font-semibold px-4 sm:px-6 py-3 rounded-full hover:bg-green-50 transition-colors shadow-lg text-sm sm:text-base"
                 >
                   Daftar Sekarang <ArrowRight className="w-4 h-4" />
                 </Link>
                 <Link
                   href="/edukasi"
-                  className="inline-flex items-center gap-2 bg-white/20 text-white font-semibold px-6 py-3 rounded-full hover:bg-white/30 transition-colors border border-white/30"
+                  className="inline-flex items-center gap-2 bg-white/20 text-white font-semibold px-4 sm:px-6 py-3 rounded-full hover:bg-white/30 transition-colors border border-white/30 text-sm sm:text-base"
                 >
                   Tips Pengelolaan Sampah <ChevronRight className="w-4 h-4" />
                 </Link>
@@ -61,7 +61,7 @@ export default function HomePage() {
 
             {/* Illustration */}
             <div className="flex items-center justify-center mt-4 lg:mt-0">
-              <div className="relative w-xl lg:w-160">
+              <div className="relative w-sm md:w-xl lg:w-160">
                 {/* <div className="absolute inset-0 rounded-full border border-white/15 bg-white/5" />
                 <div className="absolute inset-6 rounded-full border border-white/10 bg-white/5" />
 
@@ -95,7 +95,7 @@ export default function HomePage() {
                 <div className="absolute bottom-14 left-5 w-2 h-2 rounded-full bg-white/40" />
                 <div className="absolute top-6 right-16 w-1.5 h-1.5 rounded-full bg-white/25" />
                 <div className="absolute bottom-6 left-16 w-1.5 h-1.5 rounded-full bg-white/25" /> */}
-                <div className="aspect-16/11 rounded-2xl bg-[#092928] shadow-lg md:aspect-square md:flex-1 2xl:aspect-16/11">
+                <div className="aspect-16/11 rounded-2xl bg-[#092928] shadow-lg md:flex-1">
                   <img
                     src="/webp/tps.webp"
                     alt="Main Building"
@@ -120,7 +120,7 @@ export default function HomePage() {
       </section>
 
       {/* Stats */}
-      <section className="py-12 bg-white">
+      <section className="px-4 py-12 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             {stats.map((s) => (
@@ -139,7 +139,7 @@ export default function HomePage() {
       </section>
 
       {/* About preview */}
-      <section className="py-16 bg-[#FBFAF2]">
+      <section className="px-4 py-16 bg-[#FBFAF2]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid md:grid-cols-2 gap-12 items-center">
             <div>
@@ -189,7 +189,7 @@ export default function HomePage() {
       </section>
 
       {/* Latest news */}
-      <section className="py-16 bg-white">
+      <section className="px-4 py-16 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-end justify-between mb-8">
             <div>
@@ -222,7 +222,7 @@ export default function HomePage() {
       </section>
 
       {/* CTA */}
-      <section className="py-16 bg-[#2F855A]">
+      <section className="px-4 py-16 bg-[#2F855A]">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-white">
           <div className="text-5xl mb-4">🌿</div>
           <h2 className="text-3xl font-bold mb-4">Bergabunglah Bersama Kami</h2>

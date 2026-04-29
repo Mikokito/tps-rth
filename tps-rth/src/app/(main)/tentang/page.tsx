@@ -67,7 +67,7 @@ export default function TentangPage() {
   return (
     <>
       {/* Page hero */}
-      <section className="bg-[#2F855A] text-white py-14">
+      <section className="px-4 bg-[#2F855A] text-white py-14">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center gap-2 text-green-200 text-sm mb-3">
             <Link href="/" className="hover:text-white transition-colors">Beranda</Link>
@@ -82,7 +82,7 @@ export default function TentangPage() {
       </section>
 
       {/* Profile section */}
-      <section className="py-14 bg-white">
+      <section className="px-4 py-14 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid lg:grid-cols-2 gap-12 items-start">
             {/* Description */}
@@ -157,7 +157,7 @@ export default function TentangPage() {
       </section>
 
       {/* 3R Section */}
-      <section className="py-14 bg-[#FBFAF2]">
+      <section className="px-4 py-14 bg-[#FBFAF2]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-10">
             <span className="text-sm font-semibold text-[#2F855A] uppercase tracking-wider">Prinsip Kami</span>
@@ -194,7 +194,7 @@ export default function TentangPage() {
       </section>
 
       {/* Data stats */}
-      <section className="py-14 bg-white">
+      <section className="px-4 py-14 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-10">
             <span className="text-sm font-semibold text-[#2F855A] uppercase tracking-wider">Data TPS</span>
@@ -212,7 +212,7 @@ export default function TentangPage() {
       </section>
 
       {/* Organization */}
-      <section className="py-14 bg-[#FBFAF2]">
+      <section className="px-4 py-14 bg-[#FBFAF2]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-10">
             <span className="text-sm font-semibold text-[#2F855A] uppercase tracking-wider">Pengurus</span>
@@ -235,7 +235,7 @@ export default function TentangPage() {
       </section>
 
       {/* Facilities */}
-      <section className="py-14 bg-white">
+      <section className="px-4 py-14 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-10">
             <span className="text-sm font-semibold text-[#2F855A] uppercase tracking-wider">Sarana</span>
@@ -256,7 +256,7 @@ export default function TentangPage() {
       </section>
 
       {/* CTA */}
-      <section className="py-14 bg-[#2F855A]">
+      <section className="px-4 py-14 bg-[#2F855A]">
         <div className="max-w-2xl mx-auto px-4 text-center text-white">
           <h2 className="text-2xl font-bold mb-3">Tertarik Bergabung?</h2>
           <p className="text-green-100 mb-6">Daftarkan diri Anda sebagai nasabah TPS RTH dan mulai berkontribusi untuk lingkungan yang lebih baik.</p>
