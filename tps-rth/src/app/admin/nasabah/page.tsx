@@ -83,6 +83,7 @@ export default function NasabahPage() {
         totalIuran: Number(form.totalIuran) || 0,
         statusAktif: form.statusAktif,
         bergabungTanggal: form.bergabungTanggal,
+        statusIuran: "belum",
       };
       setData((prev) => [...prev, newMember]);
     }

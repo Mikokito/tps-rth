@@ -92,3 +92,21 @@ export function seedAdminUser(): void {
     });
   }
 }
+
+export function seedUserAccount(): void {
+  if (typeof window === "undefined") return;
+  const dummyUser: User = {
+    id: "user-001",
+    nama: "Budi Santoso",
+    rw: "03",
+    rt: "05",
+    email: "user@tpsrth.com",
+    hp: "08100000001",
+    alamat: "Jl. Mawar No. 1, Cikaret",
+    passwordHash: hashPassword("user123"),
+    createdAt: "2023-01-15T00:00:00.000Z",
+    role: "user",
+  };
+  const users = getUsers().filter((u) => u.email !== "user@tpsrth.com");
+  localStorage.setItem(USERS_KEY, JSON.stringify([...users, dummyUser]));
+}

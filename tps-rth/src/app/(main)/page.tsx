@@ -129,7 +129,7 @@ export default function HomePage() {
                   <s.icon className={`w-6 h-6 ${s.color}`} />
                 </div>
                 <div>
-                  <div className={`text-2xl font-bold ${s.color}`}>{s.value}</div>
+                  <div className={`text-lg sm:text-2xl font-bold ${s.color}`}>{s.value}</div>
                   <div className="text-xs text-gray-600 mt-0.5">{s.label}</div>
                 </div>
               </div>

@@ -33,6 +33,7 @@ export interface Member {
   totalIuran: number;
   statusAktif: boolean;
   bergabungTanggal: string;
+  statusIuran: "sudah" | "belum";
 }
 
 export interface WastePrice {
@@ -64,6 +65,15 @@ export interface AbsenEntry {
   jabatan: string;
   status: "hadir" | "izin" | "sakit" | "alpha";
   lastModified?: string;
+}
+
+export interface IuranMember {
+  id: string;
+  nasabahNama: string;
+  bulan: string;
+  iuran: number;
+  statusIuran: "sudah" | "belum";
+  tanggal: string;
 }
 
 // --- Waste Entries (last 30 entries) ---
@@ -123,18 +133,18 @@ export const staffMembers: StaffMember[] = [
 
 // --- Members / Nasabah ---
 export const members: Member[] = [
-  { id: "m1",  nama: "Budi Santoso",     rw: "03", rt: "05", email: "budi@example.com",   hp: "08100000001", alamat: "Jl. Mawar No. 1, Cikaret",    totalIuran: 150000,  statusAktif: true,  bergabungTanggal: "2023-01-15" },
-  { id: "m2",  nama: "Siti Rahayu",      rw: "02", rt: "03", email: "siti@example.com",   hp: "08100000002", alamat: "Jl. Melati No. 5, Cikaret",   totalIuran: 320000,  statusAktif: true,  bergabungTanggal: "2022-08-20" },
-  { id: "m3",  nama: "Agus Pratama",     rw: "01", rt: "02", email: "agus@example.com",   hp: "08100000003", alamat: "Jl. Anggrek No. 3, Cikaret",  totalIuran: 85000,   statusAktif: true,  bergabungTanggal: "2024-03-10" },
-  { id: "m4",  nama: "Dewi Lestari",     rw: "04", rt: "01", email: "dewi@example.com",   hp: "08100000004", alamat: "Jl. Kenanga No. 7, Cikaret",  totalIuran: 210000,  statusAktif: true,  bergabungTanggal: "2023-06-05" },
-  { id: "m5",  nama: "Hendra Putra",     rw: "02", rt: "04", email: "hendra@example.com", hp: "08100000005", alamat: "Jl. Dahlia No. 2, Cikaret",   totalIuran: 0,       statusAktif: false, bergabungTanggal: "2022-11-30" },
-  { id: "m6",  nama: "Rina Wati",        rw: "03", rt: "02", email: "rina@example.com",   hp: "08100000006", alamat: "Jl. Seruni No. 4, Cikaret",   totalIuran: 460000,  statusAktif: true,  bergabungTanggal: "2022-05-12" },
-  { id: "m7",  nama: "Joko Widodo",      rw: "01", rt: "03", email: "joko@example.com",   hp: "08100000007", alamat: "Jl. Cempaka No. 9, Cikaret",  totalIuran: 175000,  statusAktif: true,  bergabungTanggal: "2023-09-22" },
-  { id: "m8",  nama: "Ani Sukarti",      rw: "05", rt: "01", email: "ani@example.com",    hp: "08100000008", alamat: "Jl. Kamboja No. 6, Cikaret",  totalIuran: 95000,   statusAktif: true,  bergabungTanggal: "2024-01-08" },
-  { id: "m9",  nama: "Rizky Fauzan",     rw: "02", rt: "02", email: "rizky@example.com",  hp: "08100000009", alamat: "Jl. Flamboyan No. 8, Cikaret",totalIuran: 280000,  statusAktif: true,  bergabungTanggal: "2023-04-17" },
-  { id: "m10", nama: "Yuni Astuti",      rw: "03", rt: "04", email: "yuni@example.com",   hp: "08100000010", alamat: "Jl. Tulip No. 11, Cikaret",   totalIuran: 0,       statusAktif: false, bergabungTanggal: "2023-02-28" },
-  { id: "m11", nama: "Doni Setiawan",    rw: "04", rt: "03", email: "doni@example.com",   hp: "08100000011", alamat: "Jl. Aster No. 10, Cikaret",   totalIuran: 120000,  statusAktif: true,  bergabungTanggal: "2023-12-01" },
-  { id: "m12", nama: "Maya Indah",       rw: "01", rt: "01", email: "maya@example.com",   hp: "08100000012", alamat: "Jl. Bougenville No. 14, Cikaret", totalIuran: 540000, statusAktif: true, bergabungTanggal: "2022-03-15" },
+  { id: "m1",  nama: "Budi Santoso",     rw: "03", rt: "05", email: "budi@example.com",   hp: "08100000001", alamat: "Jl. Mawar No. 1, Cikaret",        totalIuran: 150000,  statusAktif: true,  bergabungTanggal: "2023-01-15", statusIuran: "sudah" },
+  { id: "m2",  nama: "Siti Rahayu",      rw: "02", rt: "03", email: "siti@example.com",   hp: "08100000002", alamat: "Jl. Melati No. 5, Cikaret",       totalIuran: 320000,  statusAktif: true,  bergabungTanggal: "2022-08-20", statusIuran: "sudah" },
+  { id: "m3",  nama: "Agus Pratama",     rw: "01", rt: "02", email: "agus@example.com",   hp: "08100000003", alamat: "Jl. Anggrek No. 3, Cikaret",      totalIuran: 85000,   statusAktif: true,  bergabungTanggal: "2024-03-10", statusIuran: "belum" },
+  { id: "m4",  nama: "Dewi Lestari",     rw: "04", rt: "01", email: "dewi@example.com",   hp: "08100000004", alamat: "Jl. Kenanga No. 7, Cikaret",      totalIuran: 210000,  statusAktif: true,  bergabungTanggal: "2023-06-05", statusIuran: "sudah" },
+  { id: "m5",  nama: "Hendra Putra",     rw: "02", rt: "04", email: "hendra@example.com", hp: "08100000005", alamat: "Jl. Dahlia No. 2, Cikaret",       totalIuran: 0,       statusAktif: false, bergabungTanggal: "2022-11-30", statusIuran: "belum" },
+  { id: "m6",  nama: "Rina Wati",        rw: "03", rt: "02", email: "rina@example.com",   hp: "08100000006", alamat: "Jl. Seruni No. 4, Cikaret",       totalIuran: 460000,  statusAktif: true,  bergabungTanggal: "2022-05-12", statusIuran: "sudah" },
+  { id: "m7",  nama: "Joko Widodo",      rw: "01", rt: "03", email: "joko@example.com",   hp: "08100000007", alamat: "Jl. Cempaka No. 9, Cikaret",      totalIuran: 175000,  statusAktif: true,  bergabungTanggal: "2023-09-22", statusIuran: "belum" },
+  { id: "m8",  nama: "Ani Sukarti",      rw: "05", rt: "01", email: "ani@example.com",    hp: "08100000008", alamat: "Jl. Kamboja No. 6, Cikaret",      totalIuran: 95000,   statusAktif: true,  bergabungTanggal: "2024-01-08", statusIuran: "sudah" },
+  { id: "m9",  nama: "Rizky Fauzan",     rw: "02", rt: "02", email: "rizky@example.com",  hp: "08100000009", alamat: "Jl. Flamboyan No. 8, Cikaret",    totalIuran: 280000,  statusAktif: true,  bergabungTanggal: "2023-04-17", statusIuran: "sudah" },
+  { id: "m10", nama: "Yuni Astuti",      rw: "03", rt: "04", email: "yuni@example.com",   hp: "08100000010", alamat: "Jl. Tulip No. 11, Cikaret",       totalIuran: 0,       statusAktif: false, bergabungTanggal: "2023-02-28", statusIuran: "belum" },
+  { id: "m11", nama: "Doni Setiawan",    rw: "04", rt: "03", email: "doni@example.com",   hp: "08100000011", alamat: "Jl. Aster No. 10, Cikaret",       totalIuran: 120000,  statusAktif: true,  bergabungTanggal: "2023-12-01", statusIuran: "belum" },
+  { id: "m12", nama: "Maya Indah",       rw: "01", rt: "01", email: "maya@example.com",   hp: "08100000012", alamat: "Jl. Bougenville No. 14, Cikaret", totalIuran: 540000,  statusAktif: true,  bergabungTanggal: "2022-03-15", statusIuran: "sudah" },
 ];
 
 // --- Waste Prices ---
@@ -193,4 +203,11 @@ export const jenisData: JenisSampah[] = [
   { id: "j10", nama: "Kaca Bening",     kategori: "Kaca"    },
   { id: "j11", nama: "Kaca Berwarna",   kategori: "Kaca"    },
   { id: "j12", nama: "Sampah Organik",  kategori: "Organik" },
+];
+
+// --- Iuran Per Bulan ---
+export const iuranMember: IuranMember[] = [
+  {id: "i1", nasabahNama: "Budi Santoso", bulan: "Maret", iuran: 75000, statusIuran: "sudah", tanggal: "1 Maret 2026"},
+  {id: "i2", nasabahNama: "Budi Santoso", bulan: "April", iuran: 75000, statusIuran: "sudah", tanggal: "5 April 2026"},
+  {id: "i3", nasabahNama: "Budi Santoso", bulan: "Mei",   iuran: 75000, statusIuran: "belum", tanggal: "-"},
 ];

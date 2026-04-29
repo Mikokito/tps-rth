@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Menu, X, Leaf, LogOut, UserCheck } from "lucide-react";
+import { Menu, X, Leaf, LogOut, UserCheck, LayoutDashboard } from "lucide-react";
 import { getSession, clearSession, type SessionUser } from "@/lib/mockAuth";
 
 const navLinks = [
@@ -71,6 +71,15 @@ export default function Header() {
           <div className="hidden md:flex items-center gap-2">
             {session ? (
               <>
+                {session.role === "user" && (
+                  <Link
+                    href="/user/dashboard"
+                    className="flex items-center gap-1.5 text-sm font-medium text-[#2F855A] px-3 py-2 rounded-lg hover:bg-[#F0FFF4] transition-colors"
+                  >
+                    <LayoutDashboard className="w-4 h-4" />
+                    Dashboard
+                  </Link>
+                )}
                 <div className="flex items-center gap-1.5 text-sm text-gray-600 bg-[#F0FFF4] rounded-lg px-3 py-2">
                   <UserCheck className="w-4 h-4 text-[#2F855A]" />
                   <span className="font-medium text-[#2F855A]">
@@ -140,18 +149,30 @@ export default function Header() {
           {/* Mobile auth */}
           <div className="px-4 pt-3 border-t border-gray-50 mt-2">
             {session ? (
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-sm text-[#2F855A] font-medium">
-                  <UserCheck className="w-4 h-4" />
-                  Halo, {session.nama.split(" ")[0]}
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-sm text-[#2F855A] font-medium">
+                    <UserCheck className="w-4 h-4" />
+                    Halo, {session.nama.split(" ")[0]}
+                  </div>
+                  <button
+                    onClick={handleLogout}
+                    className="flex items-center gap-1.5 text-sm font-medium text-red-500 hover:text-red-600"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    Keluar
+                  </button>
                 </div>
-                <button
-                  onClick={handleLogout}
-                  className="flex items-center gap-1.5 text-sm font-medium text-red-500 hover:text-red-600"
-                >
-                  <LogOut className="w-4 h-4" />
-                  Keluar
-                </button>
+                {session.role === "user" && (
+                  <Link
+                    href="/user/dashboard"
+                    onClick={() => setIsOpen(false)}
+                    className="flex items-center gap-2 text-sm font-medium text-[#2F855A] px-3 py-2 rounded-lg bg-[#F0FFF4] hover:bg-green-100 transition-colors"
+                  >
+                    <LayoutDashboard className="w-4 h-4" />
+                    Buka Dashboard
+                  </Link>
+                )}
               </div>
             ) : (
               <div className="flex gap-2">

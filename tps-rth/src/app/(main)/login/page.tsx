@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Mail, Lock, Eye, EyeOff, Leaf, CheckCircle } from "lucide-react";
 import FormInput from "@/components/FormInput";
-import { findByEmail, verifyPassword, setSession, seedAdminUser } from "@/lib/mockAuth";
+import { findByEmail, verifyPassword, setSession, seedAdminUser, seedUserAccount } from "@/lib/mockAuth";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -17,6 +17,7 @@ export default function LoginPage() {
 
   useEffect(() => {
     seedAdminUser();
+    seedUserAccount();
     const flag = sessionStorage.getItem("signup_success");
     if (flag) {
       setJustRegistered(true);
@@ -52,7 +53,7 @@ export default function LoginPage() {
       }
       const { passwordHash: _, ...sessionData } = user;
       setSession(sessionData);
-      router.push(sessionData.role === "admin" ? "/admin/dashboard" : "/");
+      router.push(sessionData.role === "admin" ? "/admin/dashboard" : "/user/dashboard");
     }, 500);
   }
 
@@ -75,7 +76,7 @@ export default function LoginPage() {
             <div className="flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-[#2F855A] inline-block" />
               <span className="text-[10px] tracking-[0.25em] uppercase font-mono text-gray-700">
-                TPS RTH · ISSUE NO. 04
+                TPS RTH · 
               </span>
             </div>
             <div>
