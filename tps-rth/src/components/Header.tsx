@@ -71,9 +71,9 @@ export default function Header() {
           <div className="hidden md:flex items-center gap-2">
             {session ? (
               <>
-                {session.role === "user" && (
+                {(session.role === "user" || session.role === "petugas" || session.role === "admin") && (
                   <Link
-                    href="/user/dashboard"
+                    href={session.role === "admin" ? "/admin/dashboard" : session.role === "petugas" ? "/petugas/dashboard" : "/user/dashboard"}
                     className="flex items-center gap-1.5 text-sm font-medium text-[#2F855A] px-3 py-2 rounded-lg hover:bg-[#F0FFF4] transition-colors"
                   >
                     <LayoutDashboard className="w-4 h-4" />
@@ -163,9 +163,9 @@ export default function Header() {
                     Keluar
                   </button>
                 </div>
-                {session.role === "user" && (
+                {(session.role === "user" || session.role === "petugas" || session.role === "admin") && (
                   <Link
-                    href="/user/dashboard"
+                    href={session.role === "admin" ? "/admin/dashboard" : session.role === "petugas" ? "/petugas/dashboard" : "/user/dashboard"}
                     onClick={() => setIsOpen(false)}
                     className="flex items-center gap-2 text-sm font-medium text-[#2F855A] px-3 py-2 rounded-lg bg-[#F0FFF4] hover:bg-green-100 transition-colors"
                   >

@@ -63,8 +63,8 @@ export interface AbsenEntry {
   staffId: string;
   nama: string;
   jabatan: string;
-  status: "hadir" | "izin" | "sakit" | "alpha";
-  lastModified?: string;
+  status: "hadir" | "izin" | "absen";
+  lastModified: string;
 }
 
 export interface IuranMember {
@@ -175,18 +175,18 @@ export const laporanItems: LaporanItem[] = [
 
 // --- Attendance ---
 export const absenRecords: AbsenEntry[] = [
-  { id: "a1",  tanggal: "2025-04-28", staffId: "s1", nama: "Agus Santoso",     jabatan: "Ketua",                status: "hadir" },
-  { id: "a2",  tanggal: "2025-04-28", staffId: "s2", nama: "Sri Wahyuni",      jabatan: "Wakil Ketua",          status: "hadir" },
-  { id: "a3",  tanggal: "2025-04-28", staffId: "s3", nama: "Dewi Rahayu",      jabatan: "Sekretaris",           status: "izin"  },
-  { id: "a4",  tanggal: "2025-04-28", staffId: "s4", nama: "Hendra Kurniawan", jabatan: "Bendahara",            status: "hadir" },
-  { id: "a5",  tanggal: "2025-04-28", staffId: "s5", nama: "Deni Saputra",     jabatan: "Koordinator Lapangan", status: "hadir" },
-  { id: "a6",  tanggal: "2025-04-28", staffId: "s6", nama: "Ratna Sari",       jabatan: "Tim Edukasi",          status: "sakit" },
-  { id: "a7",  tanggal: "2025-04-25", staffId: "s1", nama: "Agus Santoso",     jabatan: "Ketua",                status: "hadir" },
-  { id: "a8",  tanggal: "2025-04-25", staffId: "s2", nama: "Sri Wahyuni",      jabatan: "Wakil Ketua",          status: "hadir" },
-  { id: "a9",  tanggal: "2025-04-25", staffId: "s3", nama: "Dewi Rahayu",      jabatan: "Sekretaris",           status: "hadir" },
-  { id: "a10", tanggal: "2025-04-25", staffId: "s4", nama: "Hendra Kurniawan", jabatan: "Bendahara",            status: "hadir" },
-  { id: "a11", tanggal: "2025-04-25", staffId: "s5", nama: "Deni Saputra",     jabatan: "Koordinator Lapangan", status: "alpha" },
-  { id: "a12", tanggal: "2025-04-25", staffId: "s6", nama: "Ratna Sari",       jabatan: "Tim Edukasi",          status: "hadir" },
+  { id: "a1",  tanggal: "2025-04-28", staffId: "s1", nama: "Agus Santoso",     jabatan: "Ketua",                status: "hadir", lastModified: "2025-04-28T08:30:00.000Z" },
+  { id: "a2",  tanggal: "2025-04-28", staffId: "s2", nama: "Sri Wahyuni",      jabatan: "Wakil Ketua",          status: "hadir", lastModified: "2025-04-28T08:31:00.000Z" },
+  { id: "a3",  tanggal: "2025-04-28", staffId: "s3", nama: "Dewi Rahayu",      jabatan: "Sekretaris",           status: "izin",  lastModified: "2025-04-28T08:32:00.000Z" },
+  { id: "a4",  tanggal: "2025-04-28", staffId: "s4", nama: "Hendra Kurniawan", jabatan: "Bendahara",            status: "hadir", lastModified: "2025-04-28T08:33:00.000Z" },
+  { id: "a5",  tanggal: "2025-04-28", staffId: "s5", nama: "Deni Saputra",     jabatan: "Koordinator Lapangan", status: "hadir", lastModified: "2025-04-28T08:34:00.000Z" },
+  { id: "a6",  tanggal: "2025-04-28", staffId: "s6", nama: "Ratna Sari",       jabatan: "Tim Edukasi",          status: "izin",  lastModified: "2025-04-28T08:35:00.000Z" },
+  { id: "a7",  tanggal: "2025-04-25", staffId: "s1", nama: "Agus Santoso",     jabatan: "Ketua",                status: "hadir", lastModified: "2025-04-25T08:15:00.000Z" },
+  { id: "a8",  tanggal: "2025-04-25", staffId: "s2", nama: "Sri Wahyuni",      jabatan: "Wakil Ketua",          status: "hadir", lastModified: "2025-04-25T08:16:00.000Z" },
+  { id: "a9",  tanggal: "2025-04-25", staffId: "s3", nama: "Dewi Rahayu",      jabatan: "Sekretaris",           status: "hadir", lastModified: "2025-04-25T08:17:00.000Z" },
+  { id: "a10", tanggal: "2025-04-25", staffId: "s4", nama: "Hendra Kurniawan", jabatan: "Bendahara",            status: "hadir", lastModified: "2025-04-25T08:18:00.000Z" },
+  { id: "a11", tanggal: "2025-04-25", staffId: "s5", nama: "Deni Saputra",     jabatan: "Koordinator Lapangan", status: "absen", lastModified: "2025-04-25T08:19:00.000Z" },
+  { id: "a12", tanggal: "2025-04-25", staffId: "s6", nama: "Ratna Sari",       jabatan: "Tim Edukasi",          status: "hadir", lastModified: "2025-04-25T08:20:00.000Z" },
 ];
 
 // --- Jenis Sampah (manageable list) ---

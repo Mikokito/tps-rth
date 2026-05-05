@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Mail, Lock, Eye, EyeOff, Leaf, CheckCircle } from "lucide-react";
 import FormInput from "@/components/FormInput";
-import { findByEmail, verifyPassword, setSession, seedAdminUser, seedUserAccount } from "@/lib/mockAuth";
+import { findByEmail, verifyPassword, setSession, seedAdminUser, seedUserAccount, seedPetugasAccount } from "@/lib/mockAuth";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -18,6 +18,7 @@ export default function LoginPage() {
   useEffect(() => {
     seedAdminUser();
     seedUserAccount();
+    seedPetugasAccount();
     const flag = sessionStorage.getItem("signup_success");
     if (flag) {
       setJustRegistered(true);
@@ -53,7 +54,11 @@ export default function LoginPage() {
       }
       const { passwordHash: _, ...sessionData } = user;
       setSession(sessionData);
-      router.push(sessionData.role === "admin" ? "/admin/dashboard" : "/user/dashboard");
+      router.push(
+        sessionData.role === "admin"   ? "/admin/dashboard" :
+        sessionData.role === "petugas" ? "/petugas/dashboard" :
+        "/user/dashboard"
+      );
     }, 500);
   }
 

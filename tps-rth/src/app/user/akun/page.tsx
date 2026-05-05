@@ -9,6 +9,8 @@ type FormState = {
   email: string;
   hp: string;
   alamat: string;
+  rw: string;
+  rt: string;
   passwordLama: string;
   passwordBaru: string;
   passwordConfirm: string;
@@ -17,7 +19,7 @@ type FormState = {
 export default function UserAkunPage() {
   const [session, setSessionState] = useState<SessionUser | null>(null);
   const [form, setForm] = useState<FormState>({
-    nama: "", email: "", hp: "", alamat: "",
+    nama: "", email: "", hp: "", alamat: "", rw: "", rt: "",
     passwordLama: "", passwordBaru: "", passwordConfirm: "",
   });
   const [showPass, setShowPass] = useState({ lama: false, baru: false, confirm: false });
@@ -29,7 +31,7 @@ export default function UserAkunPage() {
     const s = getSession();
     if (s) {
       setSessionState(s);
-      setForm((f) => ({ ...f, nama: s.nama, email: s.email, hp: s.hp, alamat: s.alamat }));
+      setForm((f) => ({ ...f, nama: s.nama, email: s.email, hp: s.hp, alamat: s.alamat, rw: s.rw ?? "", rt: s.rt ?? "" }));
     }
   }, []);
 
@@ -72,6 +74,8 @@ export default function UserAkunPage() {
         email: form.email.trim().toLowerCase(),
         hp: form.hp.trim(),
         alamat: form.alamat.trim(),
+        rw: form.rw.trim(),
+        rt: form.rt.trim(),
       };
       setSession(updated);
       setSessionState(updated);
@@ -165,6 +169,28 @@ export default function UserAkunPage() {
                 <input type="tel" value={form.hp} onChange={update("hp")} placeholder="08xx-xxxx-xxxx" className={inputCls("hp")} />
               </div>
               {errors.hp && <p className="mt-1 text-xs text-red-500">⚠ {errors.hp}</p>}
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">RW</label>
+                <input
+                  value={form.rw}
+                  onChange={update("rw")}
+                  placeholder="01"
+                  maxLength={3}
+                  className="w-full border border-gray-200 bg-white rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#2F855A] focus:border-transparent transition-shadow"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">RT</label>
+                <input
+                  value={form.rt}
+                  onChange={update("rt")}
+                  placeholder="01"
+                  maxLength={3}
+                  className="w-full border border-gray-200 bg-white rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#2F855A] focus:border-transparent transition-shadow"
+                />
+              </div>
             </div>
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1.5">Alamat</label>

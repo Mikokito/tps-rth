@@ -8,13 +8,6 @@ export const metadata: Metadata = {
   description: "Informasi lengkap mengenai TPS RTH Cikaret, misi, visi, fasilitas, dan struktur organisasi.",
 };
 
-const dataStats = [
-  { label: "Nasabah Aktif", value: tpsInfo.stats.nasabah.toLocaleString("id-ID") + "+", icon: Users, color: "text-[#2F855A]", bg: "bg-[#F0FFF4]" },
-  { label: "Sampah/Bulan", value: tpsInfo.stats.sampahBulanan + " ton", icon: Weight, color: "text-blue-600", bg: "bg-blue-50" },
-  { label: "Mitra", value: tpsInfo.stats.mitraBankSampah + " mitra", icon: Building2, color: "text-amber-600", bg: "bg-amber-50" },
-  { label: "Daur Ulang", value: tpsInfo.stats.totalDaur + " ton", icon: Recycle, color: "text-purple-600", bg: "bg-purple-50" },
-];
-
 const threeR = [
   {
     key: "Reduce",
@@ -193,26 +186,8 @@ export default function TentangPage() {
         </div>
       </section>
 
-      {/* Data stats */}
-      <section className="px-4 py-14 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-10">
-            <span className="text-sm font-semibold text-[#2F855A] uppercase tracking-wider">Data TPS</span>
-            <h2 className="text-3xl font-bold text-gray-900 mt-1">Pencapaian Kami</h2>
-          </div>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            {dataStats.map((s) => (
-              <div key={s.label} className={`${s.bg} shadow-sm rounded-2xl p-6 text-center`}>
-                <div className={`text-3xl font-bold ${s.color} mb-1`}>{s.value}</div>
-                <div className="text-sm text-gray-600">{s.label}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* Organization */}
-      <section className="px-4 py-14 bg-[#FBFAF2]">
+      <section className="px-4 py-14 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-10">
             <span className="text-sm font-semibold text-[#2F855A] uppercase tracking-wider">Pengurus</span>
@@ -227,27 +202,6 @@ export default function TentangPage() {
                 <div>
                   <div className="font-semibold text-gray-900 text-sm">{member.name}</div>
                   <div className="text-xs text-[#2F855A] font-medium mt-0.5">{member.role}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Facilities */}
-      <section className="px-4 py-14 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-10">
-            <span className="text-sm font-semibold text-[#2F855A] uppercase tracking-wider">Sarana</span>
-            <h2 className="text-3xl font-bold text-gray-900 mt-1">Fasilitas TPS</h2>
-          </div>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {tpsInfo.facilities.map((f) => (
-              <div key={f.name} className="flex gap-4">
-                <CheckCircle className="w-6 h-6 text-[#2F855A] flex-shrink-0 mt-0.5" />
-                <div>
-                  <div className="font-semibold text-gray-900">{f.name}</div>
-                  <div className="text-sm text-gray-500 mt-0.5 leading-relaxed">{f.desc}</div>
                 </div>
               </div>
             ))}

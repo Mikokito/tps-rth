@@ -6,7 +6,7 @@ import Link from "next/link";
 import {
   Leaf, LayoutDashboard, Trash2, User, Users, UserCheck,
   DollarSign, Newspaper, FileText, CalendarCheck, Settings,
-  Menu, X, LogOut, ChevronRight,
+  Menu, X, LogOut, ChevronRight, Banknote,
 } from "lucide-react";
 import { getSession, clearSession, seedAdminUser, type SessionUser } from "@/lib/mockAuth";
 
@@ -15,7 +15,8 @@ const navItems = [
   { href: "/admin/sampah",    label: "Data Sampah",      icon: Trash2 },
   { href: "/admin/pengurus",  label: "Pengurus",  icon: User },
   { href: "/admin/petugas",   label: "Petugas",  icon: Users },
-  { href: "/admin/nasabah",   label: "Nasabah & Iuran",  icon: UserCheck },
+  { href: "/admin/nasabah",   label: "Nasabah",           icon: UserCheck },
+  { href: "/admin/iuran",     label: "Iuran",             icon: Banknote },
   { href: "/admin/harga",     label: "Harga Sampah",     icon: DollarSign },
   { href: "/admin/berita",    label: "Berita",            icon: Newspaper },
   { href: "/admin/laporan",   label: "Laporan",           icon: FileText },
@@ -114,6 +115,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               </Link>
             );
           })}
+          <Link
+            href="/"
+            onClick={() => setSidebarOpen(false)}
+            className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium mb-0.5 text-white/50 hover:bg-white/10 hover:text-white transition-colors"
+          >
+            ← Kembali ke Beranda
+          </Link>
         </nav>
 
         {/* User */}

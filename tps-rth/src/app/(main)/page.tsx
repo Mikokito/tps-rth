@@ -119,27 +119,8 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Stats */}
-      <section className="px-4 py-12 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            {stats.map((s) => (
-              <div key={s.label} className={`${s.bg} shadow-sm rounded-2xl p-5 flex items-center gap-4`}>
-                <div className={`w-12 h-12 bg-white rounded-xl flex items-center justify-center shadow-sm flex-shrink-0`}>
-                  <s.icon className={`w-6 h-6 ${s.color}`} />
-                </div>
-                <div>
-                  <div className={`text-lg sm:text-2xl font-bold ${s.color}`}>{s.value}</div>
-                  <div className="text-xs text-gray-600 mt-0.5">{s.label}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* About preview */}
-      <section className="px-4 py-16 bg-[#FBFAF2]">
+      <section className="px-4 py-16 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid md:grid-cols-2 gap-12 items-center">
             <div>
@@ -177,7 +158,7 @@ export default function HomePage() {
                 { emoji: "🌱", title: "Recycle", desc: "Daur ulang sampah menjadi produk baru" },
                 { emoji: "💰", title: "Nilai Ekonomis", desc: "Sampah terpilah menghasilkan pendapatan" },
               ].map((item) => (
-                <div key={item.title} className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
+                <div key={item.title} className="bg-[#FBFAF2] rounded-2xl p-5 border border-[#E6DFAF] shadow-sm">
                   <div className="text-3xl mb-3">{item.emoji}</div>
                   <div className="font-semibold text-gray-900 mb-1">{item.title}</div>
                   <div className="text-xs text-gray-500 leading-relaxed">{item.desc}</div>
@@ -189,7 +170,7 @@ export default function HomePage() {
       </section>
 
       {/* Latest news */}
-      <section className="px-4 py-16 bg-white">
+      <section className="px-4 py-16 bg-[#FBFAF2]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-end justify-between mb-8">
             <div>

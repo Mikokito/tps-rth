@@ -6,9 +6,10 @@ export interface User {
   email: string;
   hp: string;
   alamat: string;
+  jabatan?: string;
   passwordHash: string;
   createdAt: string;
-  role: "admin" | "user";
+  role: "admin" | "user" | "petugas";
 }
 
 export type SessionUser = Omit<User, "passwordHash">;
@@ -91,6 +92,25 @@ export function seedAdminUser(): void {
       role: "admin",
     });
   }
+}
+
+export function seedPetugasAccount(): void {
+  if (typeof window === "undefined") return;
+  const dummyPetugas: User = {
+    id: "petugas-001",
+    nama: "Ahmad Fauzi",
+    rw: "02",
+    rt: "03",
+    email: "petugas@tpsrth.com",
+    hp: "081299990001",
+    alamat: "Jl. Dahlia No. 11, Cikaret",
+    jabatan: "Petugas Lapangan",
+    passwordHash: hashPassword("petugas123"),
+    createdAt: "2023-06-01T00:00:00.000Z",
+    role: "petugas",
+  };
+  const users = getUsers().filter((u) => u.email !== "petugas@tpsrth.com");
+  localStorage.setItem(USERS_KEY, JSON.stringify([...users, dummyPetugas]));
 }
 
 export function seedUserAccount(): void {
