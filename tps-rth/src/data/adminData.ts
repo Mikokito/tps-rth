@@ -205,6 +205,94 @@ export const jenisData: JenisSampah[] = [
   { id: "j12", nama: "Sampah Organik",  kategori: "Organik" },
 ];
 
+// --- Petugas Waste Input (shared between petugas and admin) ---
+export const SAMPAH_STORAGE_KEY = "tps_rth_petugas_sampah";
+export const JENIS_STORAGE_KEY  = "tps_rth_jenis_sampah";
+
+export interface PetugasWasteEntry {
+  id: string;
+  tanggal: string;
+  jenisSampah: string;
+  beratKg: number;
+  catatan: string;
+  petugasNama: string;
+  createdAt: string;
+}
+
+export const WASTE_HARGA_MAP: Record<string, number> = {
+  "Plastik": 2000, "Kertas": 1500, "Kardus": 1500, "Koran": 1200,
+  "Logam": 8000, "Besi": 8000, "Tembaga": 40000,
+  "Aluminium": 15000, "Organik": 300, "Kaca": 500,
+};
+
+export function resolveHarga(jenis: string): number {
+  const keys = Object.keys(WASTE_HARGA_MAP).sort((a, b) => b.length - a.length);
+  for (const key of keys) {
+    if (jenis.toLowerCase().includes(key.toLowerCase())) return WASTE_HARGA_MAP[key];
+  }
+  return 1000;
+}
+
+export const seedSampahEntries: PetugasWasteEntry[] = [
+  { id: "ps1",  tanggal: "2025-04-21", jenisSampah: "Plastik PET",    beratKg: 10.5, catatan: "Dari RW 01",   petugasNama: "Deni Saputra",  createdAt: "2025-04-21T08:30:00.000Z" },
+  { id: "ps2",  tanggal: "2025-04-21", jenisSampah: "Kardus/Karton",  beratKg: 15.0, catatan: "Dari RW 02",   petugasNama: "Deni Saputra",  createdAt: "2025-04-21T09:00:00.000Z" },
+  { id: "ps3",  tanggal: "2025-04-21", jenisSampah: "Sampah Organik", beratKg: 40.0, catatan: "",              petugasNama: "Ratna Sari",    createdAt: "2025-04-21T10:00:00.000Z" },
+  { id: "ps4",  tanggal: "2025-04-22", jenisSampah: "Plastik HDPE",   beratKg: 8.0,  catatan: "Dari RW 03",   petugasNama: "Agus Santoso",  createdAt: "2025-04-22T08:00:00.000Z" },
+  { id: "ps5",  tanggal: "2025-04-22", jenisSampah: "Kertas HVS",     beratKg: 12.0, catatan: "",              petugasNama: "Agus Santoso",  createdAt: "2025-04-22T08:45:00.000Z" },
+  { id: "ps6",  tanggal: "2025-04-22", jenisSampah: "Aluminium",      beratKg: 1.5,  catatan: "Dari RW 05",   petugasNama: "Ratna Sari",    createdAt: "2025-04-22T09:30:00.000Z" },
+  { id: "ps7",  tanggal: "2025-04-23", jenisSampah: "Plastik PET",    beratKg: 14.0, catatan: "",              petugasNama: "Deni Saputra",  createdAt: "2025-04-23T07:30:00.000Z" },
+  { id: "ps8",  tanggal: "2025-04-23", jenisSampah: "Besi/Baja",      beratKg: 5.0,  catatan: "Dari RW 04",   petugasNama: "Deni Saputra",  createdAt: "2025-04-23T08:15:00.000Z" },
+  { id: "ps9",  tanggal: "2025-04-23", jenisSampah: "Sampah Organik", beratKg: 55.0, catatan: "",              petugasNama: "Agus Santoso",  createdAt: "2025-04-23T09:00:00.000Z" },
+  { id: "ps10", tanggal: "2025-04-23", jenisSampah: "Kaca Bening",    beratKg: 6.0,  catatan: "Hati-hati",    petugasNama: "Ratna Sari",    createdAt: "2025-04-23T10:00:00.000Z" },
+  { id: "ps11", tanggal: "2025-04-24", jenisSampah: "Kardus/Karton",  beratKg: 18.0, catatan: "Dari RW 02",   petugasNama: "Ratna Sari",    createdAt: "2025-04-24T08:00:00.000Z" },
+  { id: "ps12", tanggal: "2025-04-24", jenisSampah: "Plastik Kresek", beratKg: 4.5,  catatan: "",              petugasNama: "Agus Santoso",  createdAt: "2025-04-24T09:00:00.000Z" },
+  { id: "ps13", tanggal: "2025-04-25", jenisSampah: "Aluminium",      beratKg: 2.0,  catatan: "",              petugasNama: "Deni Saputra",  createdAt: "2025-04-25T08:00:00.000Z" },
+  { id: "ps14", tanggal: "2025-04-25", jenisSampah: "Plastik PET",    beratKg: 11.0, catatan: "Dari RW 01",   petugasNama: "Deni Saputra",  createdAt: "2025-04-25T08:30:00.000Z" },
+  { id: "ps15", tanggal: "2025-04-25", jenisSampah: "Koran/Majalah",  beratKg: 9.0,  catatan: "",              petugasNama: "Ratna Sari",    createdAt: "2025-04-25T09:15:00.000Z" },
+  { id: "ps16", tanggal: "2025-04-28", jenisSampah: "Plastik PET",    beratKg: 12.5, catatan: "Dari RW 02",   petugasNama: "Deni Saputra",  createdAt: "2025-04-28T09:00:00.000Z" },
+  { id: "ps17", tanggal: "2025-04-28", jenisSampah: "Kardus/Karton",  beratKg: 8.0,  catatan: "Dari RW 03",   petugasNama: "Deni Saputra",  createdAt: "2025-04-28T09:30:00.000Z" },
+  { id: "ps18", tanggal: "2025-04-28", jenisSampah: "Aluminium",      beratKg: 2.3,  catatan: "",              petugasNama: "Agus Santoso",  createdAt: "2025-04-28T10:00:00.000Z" },
+  { id: "ps19", tanggal: "2025-04-29", jenisSampah: "Sampah Organik", beratKg: 62.0, catatan: "",              petugasNama: "Ratna Sari",    createdAt: "2025-04-29T08:00:00.000Z" },
+  { id: "ps20", tanggal: "2025-04-29", jenisSampah: "Plastik PET",    beratKg: 9.5,  catatan: "Dari RW 04",   petugasNama: "Agus Santoso",  createdAt: "2025-04-29T08:45:00.000Z" },
+  { id: "ps21", tanggal: "2025-04-29", jenisSampah: "Besi/Baja",      beratKg: 7.5,  catatan: "",              petugasNama: "Deni Saputra",  createdAt: "2025-04-29T09:30:00.000Z" },
+  { id: "ps22", tanggal: "2025-04-30", jenisSampah: "Kertas HVS",     beratKg: 16.0, catatan: "",              petugasNama: "Deni Saputra",  createdAt: "2025-04-30T08:00:00.000Z" },
+  { id: "ps23", tanggal: "2025-04-30", jenisSampah: "Plastik HDPE",   beratKg: 7.0,  catatan: "Dari RW 03",   petugasNama: "Ratna Sari",    createdAt: "2025-04-30T08:45:00.000Z" },
+  { id: "ps24", tanggal: "2025-04-30", jenisSampah: "Kaca Bening",    beratKg: 4.5,  catatan: "Kondisi baik", petugasNama: "Agus Santoso",  createdAt: "2025-04-30T09:30:00.000Z" },
+  { id: "ps25", tanggal: "2025-05-02", jenisSampah: "Plastik PET",    beratKg: 13.0, catatan: "",              petugasNama: "Deni Saputra",  createdAt: "2025-05-02T08:00:00.000Z" },
+  { id: "ps26", tanggal: "2025-05-02", jenisSampah: "Sampah Organik", beratKg: 48.0, catatan: "",              petugasNama: "Ratna Sari",    createdAt: "2025-05-02T08:45:00.000Z" },
+  { id: "ps27", tanggal: "2025-05-02", jenisSampah: "Aluminium",      beratKg: 1.8,  catatan: "Bersih",       petugasNama: "Agus Santoso",  createdAt: "2025-05-02T09:30:00.000Z" },
+  { id: "ps28", tanggal: "2025-05-05", jenisSampah: "Plastik PET",    beratKg: 12.0, catatan: "Dari RW 01",   petugasNama: "Deni Saputra",  createdAt: "2025-05-05T08:00:00.000Z" },
+  { id: "ps29", tanggal: "2025-05-05", jenisSampah: "Kardus/Karton",  beratKg: 20.0, catatan: "",              petugasNama: "Agus Santoso",  createdAt: "2025-05-05T08:30:00.000Z" },
+  { id: "ps30", tanggal: "2025-05-05", jenisSampah: "Sampah Organik", beratKg: 70.0, catatan: "",              petugasNama: "Ratna Sari",    createdAt: "2025-05-05T09:00:00.000Z" },
+];
+
+// --- Izin & Cuti ---
+export interface IzinCutiEntry {
+  id: string;
+  staffId: string;
+  namaPetugas: string;
+  jabatan: string;
+  jenis: "Izin" | "Cuti";
+  tanggalMulai: string;
+  tanggalSelesai: string;
+  alasan: string;
+  status: "menunggu" | "disetujui" | "ditolak";
+  diajukanPada: string;
+}
+
+export const izinCutiData: IzinCutiEntry[] = [
+  { id: "ic1",  staffId: "s5", namaPetugas: "Deni Saputra",     jabatan: "Koordinator Lapangan", jenis: "Cuti",  tanggalMulai: "2025-05-20", tanggalSelesai: "2025-05-23", alasan: "Liburan keluarga",             status: "menunggu",  diajukanPada: "2025-05-06T08:00:00.000Z" },
+  { id: "ic2",  staffId: "s1", namaPetugas: "Agus Santoso",     jabatan: "Ketua",                jenis: "Cuti",  tanggalMulai: "2025-05-10", tanggalSelesai: "2025-05-12", alasan: "Keperluan keluarga",           status: "menunggu",  diajukanPada: "2025-05-05T09:00:00.000Z" },
+  { id: "ic3",  staffId: "s2", namaPetugas: "Sri Wahyuni",      jabatan: "Wakil Ketua",          jenis: "Cuti",  tanggalMulai: "2025-06-02", tanggalSelesai: "2025-06-04", alasan: "Mudik Lebaran",                status: "menunggu",  diajukanPada: "2025-05-01T09:20:00.000Z" },
+  { id: "ic4",  staffId: "s4", namaPetugas: "Hendra Kurniawan", jabatan: "Bendahara",            jenis: "Cuti",  tanggalMulai: "2025-06-05", tanggalSelesai: "2025-06-07", alasan: "Mudik Lebaran keluarga besar", status: "menunggu",  diajukanPada: "2025-05-02T13:00:00.000Z" },
+  { id: "ic5",  staffId: "s2", namaPetugas: "Sri Wahyuni",      jabatan: "Wakil Ketua",          jenis: "Izin",  tanggalMulai: "2025-05-08", tanggalSelesai: "2025-05-08", alasan: "Sakit — perlu istirahat",      status: "disetujui", diajukanPada: "2025-05-07T07:30:00.000Z" },
+  { id: "ic6",  staffId: "s3", namaPetugas: "Dewi Rahayu",      jabatan: "Sekretaris",           jenis: "Cuti",  tanggalMulai: "2025-05-15", tanggalSelesai: "2025-05-17", alasan: "Pernikahan saudara",           status: "disetujui", diajukanPada: "2025-05-04T10:15:00.000Z" },
+  { id: "ic7",  staffId: "s6", namaPetugas: "Ratna Sari",       jabatan: "Tim Edukasi",          jenis: "Izin",  tanggalMulai: "2025-05-07", tanggalSelesai: "2025-05-07", alasan: "Kontrol kesehatan rutin",      status: "disetujui", diajukanPada: "2025-05-06T11:30:00.000Z" },
+  { id: "ic8",  staffId: "s1", namaPetugas: "Agus Santoso",     jabatan: "Ketua",                jenis: "Izin",  tanggalMulai: "2025-04-22", tanggalSelesai: "2025-04-22", alasan: "Rapat luar kantor",            status: "disetujui", diajukanPada: "2025-04-21T16:00:00.000Z" },
+  { id: "ic9",  staffId: "s3", namaPetugas: "Dewi Rahayu",      jabatan: "Sekretaris",           jenis: "Izin",  tanggalMulai: "2025-04-28", tanggalSelesai: "2025-04-28", alasan: "Anak sakit",                   status: "disetujui", diajukanPada: "2025-04-28T06:45:00.000Z" },
+  { id: "ic10", staffId: "s4", namaPetugas: "Hendra Kurniawan", jabatan: "Bendahara",            jenis: "Izin",  tanggalMulai: "2025-05-06", tanggalSelesai: "2025-05-06", alasan: "Urusan administrasi bank",     status: "ditolak",   diajukanPada: "2025-05-05T14:00:00.000Z" },
+];
+
 // --- Iuran Per Bulan ---
 export const iuranMember: IuranMember[] = [
   {id: "i1", nasabahNama: "Budi Santoso", bulan: "Maret", iuran: 75000, statusIuran: "sudah", tanggal: "1 Maret 2026"},
