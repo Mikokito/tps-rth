@@ -2,32 +2,30 @@
 
 import { useState, useEffect } from "react";
 import { Plus, X, Send, Check } from "lucide-react";
+import { getSession } from "@/lib/mockAuth";
+import { createClient } from "@/utils/supabase/client";
 
-type PetugasIzin = {
+type IzinRecord = {
   id: string;
-  jenis: "izin" | "cuti";
-  tglMulai: string;
-  tglSelesai: string;
+  staff_id: string;
+  nama_petugas: string;
+  jabatan: string;
+  jenis: "Izin" | "Cuti";
+  tanggal_mulai: string;
+  tanggal_selesai: string;
   alasan: string;
-  status: "pending" | "disetujui" | "ditolak";
-  createdAt: string;
+  status: "menunggu" | "disetujui" | "ditolak";
+  diajukan_pada: string;
 };
 
-const IZIN_KEY = "tps_rth_petugas_izin";
-
-const SEED_IZIN: PetugasIzin[] = [
-  { id: "pi1", jenis: "izin", tglMulai: "2025-04-27", tglSelesai: "2025-04-27", alasan: "Keperluan keluarga mendesak", status: "disetujui", createdAt: "2025-04-26T20:00:00.000Z" },
-  { id: "pi2", jenis: "cuti", tglMulai: "2025-05-10", tglSelesai: "2025-05-12", alasan: "Cuti tahunan",                 status: "pending",   createdAt: "2025-04-28T15:30:00.000Z" },
-];
-
-const STATUS_CLS: Record<PetugasIzin["status"], string> = {
-  pending:   "bg-gray-100 text-gray-600",
+const STATUS_CLS: Record<IzinRecord["status"], string> = {
+  menunggu:  "bg-gray-100 text-gray-600",
   disetujui: "bg-green-100 text-green-700",
   ditolak:   "bg-red-50 text-red-500",
 };
 
-const STATUS_LABEL: Record<PetugasIzin["status"], string> = {
-  pending: "Menunggu", disetujui: "Disetujui", ditolak: "Ditolak",
+const STATUS_LABEL: Record<IzinRecord["status"], string> = {
+  menunggu: "Menunggu", disetujui: "Disetujui", ditolak: "Ditolak",
 };
 
 function fmtDateTime(iso: string) {
@@ -39,46 +37,79 @@ function fmtDateTime(iso: string) {
 export default function PetugasIzinPage() {
   const today = new Date().toISOString().slice(0, 10);
 
-  const [izinList, setIzinList] = useState<PetugasIzin[]>([]);
+  const [staffId, setStaffId] = useState<string | null>(null);
+  const [staffNama, setStaffNama] = useState("");
+  const [staffJabatan, setStaffJabatan] = useState("");
+  const [izinList, setIzinList] = useState<IzinRecord[]>([]);
+  const [ready, setReady] = useState(false);
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ jenis: "izin" as PetugasIzin["jenis"], tglMulai: today, tglSelesai: today, alasan: "" });
+  const [form, setForm] = useState({ jenis: "Izin" as "Izin" | "Cuti", tglMulai: today, tglSelesai: today, alasan: "" });
   const [formErr, setFormErr] = useState("");
   const [sent, setSent] = useState(false);
 
   useEffect(() => {
-    const raw = localStorage.getItem(IZIN_KEY);
-    if (raw) {
-      setIzinList(JSON.parse(raw));
-    } else {
-      localStorage.setItem(IZIN_KEY, JSON.stringify(SEED_IZIN));
-      setIzinList(SEED_IZIN);
+    async function init() {
+      const session = await getSession();
+      if (!session) { setReady(true); return; }
+
+      setStaffNama(session.nama);
+      setStaffJabatan(session.jabatan ?? "");
+
+      const supabase = createClient();
+      const { data: staffRow } = await supabase
+        .from("staff_members")
+        .select("id, jabatan")
+        .eq("nama", session.nama)
+        .maybeSingle();
+
+      const sid = staffRow?.id ?? null;
+      setStaffId(sid);
+      if (staffRow?.jabatan) setStaffJabatan(staffRow.jabatan);
+
+      if (sid) {
+        const { data } = await supabase
+          .from("izin_cuti")
+          .select("id, staff_id, nama_petugas, jabatan, jenis, tanggal_mulai, tanggal_selesai, alasan, status, diajukan_pada")
+          .eq("staff_id", sid)
+          .order("diajukan_pada", { ascending: false });
+        if (data) setIzinList(data);
+      }
+      setReady(true);
     }
+    init();
   }, []);
 
-  function handleSubmit(e: React.SyntheticEvent<HTMLFormElement>) {
+  async function handleSubmit(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!form.alasan.trim()) { setFormErr("Alasan wajib diisi"); return; }
-    const now = new Date().toISOString();
-    const newIzin: PetugasIzin = {
-      id: `pi-${Date.now()}`,
+    if (!staffId) { setFormErr("Data petugas tidak ditemukan"); return; }
+
+    const supabase = createClient();
+    const { data } = await supabase.from("izin_cuti").insert({
+      staff_id: staffId,
+      nama_petugas: staffNama,
+      jabatan: staffJabatan,
       jenis: form.jenis,
-      tglMulai: form.tglMulai,
-      tglSelesai: form.tglSelesai,
+      tanggal_mulai: form.tglMulai,
+      tanggal_selesai: form.tglSelesai,
       alasan: form.alasan.trim(),
-      status: "pending",
-      createdAt: now,
-    };
-    const updated = [newIzin, ...izinList];
-    setIzinList(updated);
-    localStorage.setItem(IZIN_KEY, JSON.stringify(updated));
+      status: "menunggu",
+      diajukan_pada: new Date().toISOString(),
+    }).select("id, staff_id, nama_petugas, jabatan, jenis, tanggal_mulai, tanggal_selesai, alasan, status, diajukan_pada").single();
+
+    if (data) setIzinList((prev) => [data, ...prev]);
     setShowForm(false);
-    setForm({ jenis: "izin", tglMulai: today, tglSelesai: today, alasan: "" });
+    setForm({ jenis: "Izin", tglMulai: today, tglSelesai: today, alasan: "" });
     setFormErr("");
     setSent(true);
     setTimeout(() => setSent(false), 3000);
   }
 
-  const pendingCount = izinList.filter((iz) => iz.status === "pending").length;
+  const pendingCount = izinList.filter((iz) => iz.status === "menunggu").length;
+
+  if (!ready) {
+    return <div className="flex h-40 items-center justify-center text-gray-400 text-sm">Memuat data...</div>;
+  }
 
   return (
     <div className="space-y-6">
@@ -93,7 +124,6 @@ export default function PetugasIzinPage() {
         </div>
       )}
 
-      {/* Stats + action */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex gap-3 flex-wrap">
           <div className="bg-white border border-gray-100 rounded-xl px-4 py-2.5 shadow-sm text-center min-w-[100px]">
@@ -110,6 +140,7 @@ export default function PetugasIzinPage() {
           </div>
         </div>
         <button
+          type="button"
           onClick={() => setShowForm(true)}
           className="flex items-center gap-2 bg-[#2F855A] text-white text-sm font-semibold px-4 py-2.5 rounded-xl hover:bg-[#276749] transition-colors"
         >
@@ -117,7 +148,6 @@ export default function PetugasIzinPage() {
         </button>
       </div>
 
-      {/* List */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
         <div className="px-5 py-4 border-b border-gray-100">
           <h2 className="text-sm font-semibold text-gray-800">Riwayat Pengajuan</h2>
@@ -126,13 +156,15 @@ export default function PetugasIzinPage() {
           <p className="px-5 py-12 text-center text-sm text-gray-400">Belum ada pengajuan izin atau cuti.</p>
         ) : (
           <div className="divide-y divide-gray-50">
-            {[...izinList].sort((a, b) => b.createdAt.localeCompare(a.createdAt)).map((iz) => (
+            {izinList.map((iz) => (
               <div key={iz.id} className="px-5 py-4">
                 <div className="flex items-start justify-between gap-3 mb-1">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-sm font-semibold text-gray-800 capitalize">{iz.jenis}</span>
+                    <span className="text-sm font-semibold text-gray-800">{iz.jenis}</span>
                     <span className="text-xs text-gray-400">
-                      {iz.tglMulai === iz.tglSelesai ? iz.tglMulai : `${iz.tglMulai} s/d ${iz.tglSelesai}`}
+                      {iz.tanggal_mulai === iz.tanggal_selesai
+                        ? iz.tanggal_mulai
+                        : `${iz.tanggal_mulai} s/d ${iz.tanggal_selesai}`}
                     </span>
                   </div>
                   <span className={`inline-flex shrink-0 px-2.5 py-1 rounded-full text-xs font-semibold ${STATUS_CLS[iz.status]}`}>
@@ -140,20 +172,19 @@ export default function PetugasIzinPage() {
                   </span>
                 </div>
                 <p className="text-sm text-gray-600">{iz.alasan}</p>
-                <p className="text-xs text-gray-300 mt-1">Diajukan: {fmtDateTime(iz.createdAt)}</p>
+                <p className="text-xs text-gray-300 mt-1">Diajukan: {fmtDateTime(iz.diajukan_pada)}</p>
               </div>
             ))}
           </div>
         )}
       </div>
 
-      {/* Modal Form */}
       {showForm && (
         <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md">
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
               <h2 className="font-semibold text-gray-900">Ajukan Izin / Cuti</h2>
-              <button onClick={() => setShowForm(false)} className="text-gray-400 hover:text-gray-600">
+              <button type="button" onClick={() => setShowForm(false)} className="text-gray-400 hover:text-gray-600" title="Tutup">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -161,7 +192,7 @@ export default function PetugasIzinPage() {
               <div>
                 <label className="block text-xs font-semibold text-gray-700 mb-1.5">Jenis</label>
                 <div className="flex gap-3">
-                  {(["izin", "cuti"] as const).map((j) => (
+                  {(["Izin", "Cuti"] as const).map((j) => (
                     <button
                       key={j}
                       type="button"
@@ -170,7 +201,7 @@ export default function PetugasIzinPage() {
                         form.jenis === j ? "border-[#2F855A] bg-[#F0FFF4] text-[#2F855A]" : "border-gray-200 text-gray-400"
                       }`}
                     >
-                      {j === "izin" ? "Izin" : "Cuti"}
+                      {j}
                     </button>
                   ))}
                 </div>
@@ -182,6 +213,7 @@ export default function PetugasIzinPage() {
                     type="date"
                     value={form.tglMulai}
                     onChange={(e) => setForm((f) => ({ ...f, tglMulai: e.target.value }))}
+                    title="Tanggal mulai"
                     className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#2F855A]"
                   />
                 </div>
@@ -191,6 +223,7 @@ export default function PetugasIzinPage() {
                     type="date"
                     value={form.tglSelesai}
                     onChange={(e) => setForm((f) => ({ ...f, tglSelesai: e.target.value }))}
+                    title="Tanggal selesai"
                     className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#2F855A]"
                   />
                 </div>

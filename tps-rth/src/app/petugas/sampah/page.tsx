@@ -3,86 +3,100 @@
 import { useState, useEffect } from "react";
 import { Plus, X, Trash2, Check } from "lucide-react";
 import { getSession, type SessionUser } from "@/lib/mockAuth";
-import {
-  jenisData,
-  SAMPAH_STORAGE_KEY,
-  JENIS_STORAGE_KEY,
-  seedSampahEntries,
-  type PetugasWasteEntry,
-  type JenisSampah,
-} from "@/data/adminData";
+import { createClient } from "@/utils/supabase/client";
+
+type WasteEntry = {
+  id: string;
+  tanggal: string;
+  jenis_sampah: string;
+  berat_kg: number;
+  catatan: string;
+  petugas_nama: string;
+  created_at: string;
+};
+
+type JenisSampah = {
+  id: string;
+  nama: string;
+  kategori: string;
+};
 
 export default function PetugasSampahPage() {
   const today = new Date().toISOString().slice(0, 10);
   const [session, setSession] = useState<SessionUser | null>(null);
-  const [entries, setEntries] = useState<PetugasWasteEntry[]>([]);
-  const [jenisList, setJenisList] = useState<JenisSampah[]>(jenisData);
+  const [entries, setEntries] = useState<WasteEntry[]>([]);
+  const [jenisList, setJenisList] = useState<JenisSampah[]>([]);
+  const [ready, setReady] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({
     tanggal: today,
-    jenisSampah: jenisData[0]?.nama ?? "Plastik PET",
-    beratKg: "",
+    jenis_sampah: "",
+    berat_kg: "",
     catatan: "",
   });
   const [formErr, setFormErr] = useState<Record<string, string>>({});
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
   useEffect(() => {
-    setSession(getSession());
-    const raw = localStorage.getItem(SAMPAH_STORAGE_KEY);
-    const existing: PetugasWasteEntry[] = raw ? JSON.parse(raw) : [];
-    if (existing.length === 0) {
-      localStorage.setItem(SAMPAH_STORAGE_KEY, JSON.stringify(seedSampahEntries));
-      setEntries(seedSampahEntries);
-    } else {
-      setEntries(existing);
-    }
-    const rawJ = localStorage.getItem(JENIS_STORAGE_KEY);
-    const loaded: JenisSampah[] = rawJ ? JSON.parse(rawJ) : jenisData;
-    setJenisList(loaded);
-    setForm((f) => ({ ...f, jenisSampah: loaded[0]?.nama ?? f.jenisSampah }));
+    getSession().then((s) => {
+      setSession(s);
+      loadData();
+    });
   }, []);
+
+  async function loadData() {
+    const supabase = createClient();
+    const [{ data: jenisData }, { data: entriesData }] = await Promise.all([
+      supabase.from("jenis_sampah").select("id, nama, kategori").order("kategori").order("nama"),
+      supabase.from("waste_entries").select("id, tanggal, jenis_sampah, berat_kg, catatan, petugas_nama, created_at")
+        .order("tanggal", { ascending: false }).order("created_at", { ascending: false }),
+    ]);
+    if (jenisData) {
+      setJenisList(jenisData);
+      setForm((f) => ({ ...f, jenis_sampah: jenisData[0]?.nama ?? "" }));
+    }
+    if (entriesData) setEntries(entriesData);
+    setReady(true);
+  }
 
   function validate() {
     const errs: Record<string, string> = {};
-    if (!form.beratKg || Number(form.beratKg) <= 0) errs.beratKg = "Masukkan berat valid";
+    if (!form.berat_kg || Number(form.berat_kg) <= 0) errs.berat_kg = "Masukkan berat valid";
     return errs;
   }
 
-  function handleAdd(e: React.SyntheticEvent<HTMLFormElement>) {
+  async function handleAdd(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault();
     const errs = validate();
-    if (Object.keys(errs).length > 0) {
-      setFormErr(errs);
-      return;
-    }
-    const newEntry: PetugasWasteEntry = {
-      id: `ps-${Date.now()}`,
+    if (Object.keys(errs).length > 0) { setFormErr(errs); return; }
+
+    const supabase = createClient();
+    const { data } = await supabase.from("waste_entries").insert({
       tanggal: form.tanggal,
-      jenisSampah: form.jenisSampah,
-      beratKg: parseFloat(form.beratKg),
+      jenis_sampah: form.jenis_sampah,
+      berat_kg: parseFloat(form.berat_kg),
       catatan: form.catatan.trim(),
-      petugasNama: session?.nama ?? "Petugas",
-      createdAt: new Date().toISOString(),
-    };
-    const updated = [newEntry, ...entries];
-    setEntries(updated);
-    localStorage.setItem(SAMPAH_STORAGE_KEY, JSON.stringify(updated));
+      petugas_nama: session?.nama ?? "Petugas",
+    }).select("id, tanggal, jenis_sampah, berat_kg, catatan, petugas_nama, created_at").single();
+
+    if (data) setEntries((prev) => [data, ...prev]);
     setShowForm(false);
-    setForm({ tanggal: today, jenisSampah: jenisData[0]?.nama ?? "Plastik PET", beratKg: "", catatan: "" });
+    setForm({ tanggal: today, jenis_sampah: jenisList[0]?.nama ?? "", berat_kg: "", catatan: "" });
     setFormErr({});
   }
 
-  function handleDelete(id: string) {
-    const updated = entries.filter((e) => e.id !== id);
-    setEntries(updated);
-    localStorage.setItem(SAMPAH_STORAGE_KEY, JSON.stringify(updated));
+  async function handleDelete(id: string) {
+    const supabase = createClient();
+    await supabase.from("waste_entries").delete().eq("id", id);
+    setEntries((prev) => prev.filter((e) => e.id !== id));
     setDeleteConfirm(null);
   }
 
-  const totalKg = entries.reduce((s, e) => s + e.beratKg, 0);
+  const totalKg = entries.reduce((s, e) => s + e.berat_kg, 0);
 
-  if (!session) return null;
+  if (!ready) {
+    return <div className="flex h-40 items-center justify-center text-gray-400 text-sm">Memuat data...</div>;
+  }
 
   return (
     <div className="space-y-6">
@@ -92,6 +106,7 @@ export default function PetugasSampahPage() {
           <p className="text-sm text-gray-500">Catat sampah yang diterima dari masyarakat</p>
         </div>
         <button
+          type="button"
           onClick={() => setShowForm(true)}
           className="flex items-center gap-2 bg-[#2F855A] text-white text-sm font-semibold px-4 py-2 rounded-xl hover:bg-[#276749] transition-colors"
         >
@@ -99,7 +114,6 @@ export default function PetugasSampahPage() {
         </button>
       </div>
 
-      {/* Ringkasan */}
       <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 flex items-center gap-6">
         <div>
           <p className="text-xs text-gray-500">Total Berat Tercatat</p>
@@ -108,7 +122,6 @@ export default function PetugasSampahPage() {
         <p className="text-[11px] text-gray-400">{entries.length} entri</p>
       </div>
 
-      {/* Tabel */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
@@ -134,23 +147,23 @@ export default function PetugasSampahPage() {
                   <td className="px-4 py-3 text-gray-600 text-xs">{entry.tanggal}</td>
                   <td className="px-4 py-3">
                     <span className="inline-flex px-2 py-0.5 rounded-full text-xs font-medium bg-green-50 text-green-700">
-                      {entry.jenisSampah}
+                      {entry.jenis_sampah}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-right font-semibold text-gray-900 text-xs">{entry.beratKg} kg</td>
+                  <td className="px-4 py-3 text-right font-semibold text-gray-900 text-xs">{entry.berat_kg} kg</td>
                   <td className="px-4 py-3 text-gray-400 text-xs">{entry.catatan || "—"}</td>
                   <td className="px-4 py-3 text-right">
                     {deleteConfirm === entry.id ? (
                       <div className="flex items-center justify-end gap-1">
-                        <button onClick={() => handleDelete(entry.id)} className="p-1 text-red-500 hover:bg-red-50 rounded">
+                        <button type="button" onClick={() => handleDelete(entry.id)} className="p-1 text-red-500 hover:bg-red-50 rounded" title="Konfirmasi hapus">
                           <Check className="w-3.5 h-3.5" />
                         </button>
-                        <button onClick={() => setDeleteConfirm(null)} className="p-1 text-gray-400 hover:bg-gray-100 rounded">
+                        <button type="button" onClick={() => setDeleteConfirm(null)} className="p-1 text-gray-400 hover:bg-gray-100 rounded" title="Batal">
                           <X className="w-3.5 h-3.5" />
                         </button>
                       </div>
                     ) : (
-                      <button onClick={() => setDeleteConfirm(entry.id)} className="text-gray-300 hover:text-red-500 transition-colors">
+                      <button type="button" onClick={() => setDeleteConfirm(entry.id)} className="text-gray-300 hover:text-red-500 transition-colors" title="Hapus">
                         <Trash2 className="w-4 h-4" />
                       </button>
                     )}
@@ -162,13 +175,12 @@ export default function PetugasSampahPage() {
         </div>
       </div>
 
-      {/* Modal Tambah */}
       {showForm && (
         <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md">
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
               <h2 className="font-semibold text-gray-900">Tambah Data Sampah</h2>
-              <button onClick={() => setShowForm(false)} className="text-gray-400 hover:text-gray-600">
+              <button type="button" onClick={() => setShowForm(false)} className="text-gray-400 hover:text-gray-600" title="Tutup">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -180,14 +192,16 @@ export default function PetugasSampahPage() {
                     type="date"
                     value={form.tanggal}
                     onChange={(e) => setForm({ ...form, tanggal: e.target.value })}
+                    title="Tanggal"
                     className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#2F855A]"
                   />
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-gray-700 mb-1">Jenis Sampah</label>
                   <select
-                    value={form.jenisSampah}
-                    onChange={(e) => setForm({ ...form, jenisSampah: e.target.value })}
+                    value={form.jenis_sampah}
+                    onChange={(e) => setForm({ ...form, jenis_sampah: e.target.value })}
+                    aria-label="Jenis sampah"
                     className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#2F855A]"
                   >
                     {jenisList.map((j) => <option key={j.id}>{j.nama}</option>)}
@@ -200,12 +214,12 @@ export default function PetugasSampahPage() {
                   type="number"
                   step="0.1"
                   min="0"
-                  value={form.beratKg}
-                  onChange={(e) => { setForm({ ...form, beratKg: e.target.value }); setFormErr({}); }}
+                  value={form.berat_kg}
+                  onChange={(e) => { setForm({ ...form, berat_kg: e.target.value }); setFormErr({}); }}
                   placeholder="0.0"
-                  className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#2F855A] ${formErr.beratKg ? "border-red-300" : "border-gray-200"}`}
+                  className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#2F855A] ${formErr.berat_kg ? "border-red-300" : "border-gray-200"}`}
                 />
-                {formErr.beratKg && <p className="text-xs text-red-500 mt-1">{formErr.beratKg}</p>}
+                {formErr.berat_kg && <p className="text-xs text-red-500 mt-1">{formErr.berat_kg}</p>}
               </div>
               <div>
                 <label className="block text-xs font-semibold text-gray-700 mb-1">Catatan</label>

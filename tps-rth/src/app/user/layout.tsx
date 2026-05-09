@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import { Leaf, LayoutDashboard, Settings, LogOut, Menu, X, ChevronRight, Banknote } from "lucide-react";
-import { getSession, clearSession, seedUserAccount, type SessionUser } from "@/lib/mockAuth";
+import { getSession, clearSession, type SessionUser } from "@/lib/mockAuth";
 
 const navItems = [
   { href: "/user/dashboard", label: "Dashboard",       icon: LayoutDashboard },
@@ -20,18 +20,18 @@ export default function UserLayout({ children }: { children: React.ReactNode }) 
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    seedUserAccount();
-    const s = getSession();
-    if (!s || s.role !== "user") {
-      router.replace("/login");
-      return;
-    }
-    setSession(s);
-    setReady(true);
+    getSession().then((s) => {
+      if (!s || s.role !== "user") {
+        router.replace("/login");
+        return;
+      }
+      setSession(s);
+      setReady(true);
+    });
   }, [router]);
 
-  function handleLogout() {
-    clearSession();
+  async function handleLogout() {
+    await clearSession();
     router.push("/");
   }
 

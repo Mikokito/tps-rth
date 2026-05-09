@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Mail, Lock, Eye, EyeOff, Leaf, CheckCircle } from "lucide-react";
 import FormInput from "@/components/FormInput";
-import { findByEmail, verifyPassword, setSession, seedAdminUser, seedUserAccount, seedPetugasAccount } from "@/lib/mockAuth";
+import { signIn } from "@/lib/mockAuth";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -16,9 +16,6 @@ export default function LoginPage() {
   const [justRegistered, setJustRegistered] = useState(false);
 
   useEffect(() => {
-    seedAdminUser();
-    seedUserAccount();
-    seedPetugasAccount();
     const flag = sessionStorage.getItem("signup_success");
     if (flag) {
       setJustRegistered(true);
@@ -35,7 +32,7 @@ export default function LoginPage() {
     return errs;
   }
 
-  function handleSubmit(e: React.SyntheticEvent<HTMLFormElement>) {
+  async function handleSubmit(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault();
     const errs = validate();
     if (Object.keys(errs).length > 0) {
@@ -45,21 +42,17 @@ export default function LoginPage() {
     setLoading(true);
     setErrors({});
 
-    setTimeout(() => {
-      const user = findByEmail(form.email);
-      if (!user || !verifyPassword(form.password, user.passwordHash)) {
-        setErrors({ general: "Email atau password salah. Silakan coba lagi." });
-        setLoading(false);
-        return;
-      }
-      const { passwordHash: _, ...sessionData } = user;
-      setSession(sessionData);
-      router.push(
-        sessionData.role === "admin"   ? "/admin/dashboard" :
-        sessionData.role === "petugas" ? "/petugas/dashboard" :
-        "/user/dashboard"
-      );
-    }, 500);
+    const { user, error } = await signIn(form.email.trim(), form.password);
+    if (error || !user) {
+      setErrors({ general: "Email atau password salah. Silakan coba lagi." });
+      setLoading(false);
+      return;
+    }
+    router.push(
+      user.role === "admin"   ? "/admin/dashboard" :
+      user.role === "petugas" ? "/petugas/dashboard" :
+      "/user/dashboard",
+    );
   }
 
   return (

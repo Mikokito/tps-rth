@@ -22,11 +22,11 @@ export default function Header() {
   const router = useRouter();
 
   useEffect(() => {
-    setSession(getSession());
+    getSession().then(setSession);
   }, [pathname]);
 
-  function handleLogout() {
-    clearSession();
+  async function handleLogout() {
+    await clearSession();
     setSession(null);
     setIsOpen(false);
     router.push("/");

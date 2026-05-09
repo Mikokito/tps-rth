@@ -8,7 +8,7 @@ import {
   List, Newspaper, FileText, CalendarCheck, CalendarRange, Settings,
   Menu, X, LogOut, ChevronRight, Banknote,
 } from "lucide-react";
-import { getSession, clearSession, seedAdminUser, type SessionUser } from "@/lib/mockAuth";
+import { getSession, clearSession, type SessionUser } from "@/lib/mockAuth";
 
 const navItems = [
   { href: "/admin/dashboard", label: "Dashboard",       icon: LayoutDashboard },
@@ -33,18 +33,18 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    seedAdminUser();
-    const s = getSession();
-    if (!s || s.role !== "admin") {
-      router.replace("/login");
-      return;
-    }
-    setSession(s);
-    setReady(true);
+    getSession().then((s) => {
+      if (!s || s.role !== "admin") {
+        router.replace("/login");
+        return;
+      }
+      setSession(s);
+      setReady(true);
+    });
   }, [router]);
 
-  function handleLogout() {
-    clearSession();
+  async function handleLogout() {
+    await clearSession();
     router.push("/login");
   }
 

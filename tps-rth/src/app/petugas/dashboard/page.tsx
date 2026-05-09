@@ -2,35 +2,28 @@
 
 import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
-import { Calendar, FileText, Trash2, ChevronRight, CheckCircle, Clock, AlertCircle } from "lucide-react";
+import { Calendar, FileText, Trash2, ChevronRight, Clock, AlertCircle } from "lucide-react";
 import { getSession, type SessionUser } from "@/lib/mockAuth";
+import { createClient } from "@/utils/supabase/client";
 
-type PetugasAbsen = {
+type AbsenRecord = {
   id: string;
   tanggal: string;
   status: "hadir" | "tidak hadir" | "izin";
-  lastModified: string;
+  last_modified: string;
 };
 
-type PetugasIzin = {
+type IzinRecord = {
   id: string;
-  jenis: "izin" | "cuti";
-  tglMulai: string;
-  tglSelesai: string;
-  alasan: string;
-  status: "pending" | "disetujui" | "ditolak";
-  createdAt: string;
+  status: "menunggu" | "disetujui" | "ditolak";
 };
 
-const ABSEN_KEY  = "tps_rth_petugas_absen";
-const IZIN_KEY   = "tps_rth_petugas_izin";
-
-const STATUS_ABSEN_CLS: Record<PetugasAbsen["status"], string> = {
+const STATUS_ABSEN_CLS: Record<AbsenRecord["status"], string> = {
   hadir:         "bg-green-100 text-green-700",
   izin:          "bg-amber-50 text-amber-600",
   "tidak hadir": "bg-red-50 text-red-500",
 };
-const STATUS_ABSEN_LABEL: Record<PetugasAbsen["status"], string> = {
+const STATUS_ABSEN_LABEL: Record<AbsenRecord["status"], string> = {
   hadir: "Hadir", izin: "Izin", "tidak hadir": "Tidak Hadir",
 };
 
@@ -43,19 +36,38 @@ function fmtDateTime(iso: string) {
 export default function PetugasDashboardPage() {
   const today = new Date().toISOString().slice(0, 10);
   const [session, setSession] = useState<SessionUser | null>(null);
-  const [absenList, setAbsenList] = useState<PetugasAbsen[]>([]);
-  const [izinList, setIzinList]   = useState<PetugasIzin[]>([]);
+  const [absenList, setAbsenList] = useState<AbsenRecord[]>([]);
+  const [izinList, setIzinList]   = useState<IzinRecord[]>([]);
 
   useEffect(() => {
-    setSession(getSession());
-    const rawAbsen = localStorage.getItem(ABSEN_KEY);
-    if (rawAbsen) setAbsenList(JSON.parse(rawAbsen));
-    const rawIzin = localStorage.getItem(IZIN_KEY);
-    if (rawIzin) setIzinList(JSON.parse(rawIzin));
+    async function init() {
+      const s = await getSession();
+      setSession(s);
+      if (!s) return;
+
+      const supabase = createClient();
+      const { data: staffRow } = await supabase
+        .from("staff_members").select("id").eq("nama", s.nama).maybeSingle();
+
+      if (staffRow?.id) {
+        const [{ data: absenData }, { data: izinData }] = await Promise.all([
+          supabase.from("absensi")
+            .select("id, tanggal, status, last_modified")
+            .eq("staff_id", staffRow.id)
+            .order("tanggal", { ascending: false }),
+          supabase.from("izin_cuti")
+            .select("id, status")
+            .eq("staff_id", staffRow.id),
+        ]);
+        if (absenData) setAbsenList(absenData);
+        if (izinData) setIzinList(izinData);
+      }
+    }
+    init();
   }, []);
 
   const todayAbsen = useMemo(() => absenList.find((a) => a.tanggal === today), [absenList, today]);
-  const pendingIzin = useMemo(() => izinList.filter((iz) => iz.status === "pending").length, [izinList]);
+  const pendingIzin = useMemo(() => izinList.filter((iz) => iz.status === "menunggu").length, [izinList]);
 
   if (!session) return null;
 
@@ -69,7 +81,6 @@ export default function PetugasDashboardPage() {
         </p>
       </div>
 
-      {/* Status Cards */}
       <div className="grid sm:grid-cols-2 gap-4">
         {/* Absen hari ini */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
@@ -85,7 +96,7 @@ export default function PetugasDashboardPage() {
                 {STATUS_ABSEN_LABEL[todayAbsen.status]}
               </span>
               <span className="text-xs text-gray-400 flex items-center gap-1 mt-1.5">
-                <Clock className="w-3 h-3" /> Terakhir diubah: {fmtDateTime(todayAbsen.lastModified)}
+                <Clock className="w-3 h-3" /> Terakhir diubah: {fmtDateTime(todayAbsen.last_modified)}
               </span>
             </div>
           ) : (
@@ -108,14 +119,11 @@ export default function PetugasDashboardPage() {
         </div>
       </div>
 
-      {/* Quick Links */}
       <div>
         <h2 className="text-sm font-semibold text-gray-700 mb-3">Menu Cepat</h2>
         <div className="grid sm:grid-cols-3 gap-4">
-          <Link
-            href="/petugas/absen"
-            className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 flex items-center gap-4 hover:border-[#2F855A]/40 hover:shadow transition-all group"
-          >
+          <Link href="/petugas/absen"
+            className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 flex items-center gap-4 hover:border-[#2F855A]/40 hover:shadow transition-all group">
             <div className="w-10 h-10 rounded-xl bg-green-50 group-hover:bg-green-100 flex items-center justify-center transition-colors">
               <Calendar className="w-5 h-5 text-[#2F855A]" />
             </div>
@@ -126,10 +134,8 @@ export default function PetugasDashboardPage() {
             <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-[#2F855A] transition-colors" />
           </Link>
 
-          <Link
-            href="/petugas/izin"
-            className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 flex items-center gap-4 hover:border-[#2F855A]/40 hover:shadow transition-all group"
-          >
+          <Link href="/petugas/izin"
+            className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 flex items-center gap-4 hover:border-[#2F855A]/40 hover:shadow transition-all group">
             <div className="w-10 h-10 rounded-xl bg-blue-50 group-hover:bg-blue-100 flex items-center justify-center transition-colors">
               <FileText className="w-5 h-5 text-blue-500" />
             </div>
@@ -140,10 +146,8 @@ export default function PetugasDashboardPage() {
             <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-blue-400 transition-colors" />
           </Link>
 
-          <Link
-            href="/petugas/sampah"
-            className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 flex items-center gap-4 hover:border-[#2F855A]/40 hover:shadow transition-all group"
-          >
+          <Link href="/petugas/sampah"
+            className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 flex items-center gap-4 hover:border-[#2F855A]/40 hover:shadow transition-all group">
             <div className="w-10 h-10 rounded-xl bg-emerald-50 group-hover:bg-emerald-100 flex items-center justify-center transition-colors">
               <Trash2 className="w-5 h-5 text-emerald-500" />
             </div>

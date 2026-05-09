@@ -1,4 +1,7 @@
-export interface User {
+import type { User } from "@supabase/supabase-js";
+import { createClient } from "@/utils/supabase/client";
+
+export interface SessionUser {
   id: string;
   nama: string;
   rw: string;
@@ -7,126 +10,106 @@ export interface User {
   hp: string;
   alamat: string;
   jabatan?: string;
-  passwordHash: string;
   createdAt: string;
-  role: "admin" | "user" | "petugas";
+  role: "admin" | "petugas" | "user";
 }
 
-export type SessionUser = Omit<User, "passwordHash">;
-
-const USERS_KEY = "tps_rth_users";
-const SESSION_KEY = "tps_rth_session";
-
-export function getUsers(): User[] {
-  if (typeof window === "undefined") return [];
-  try {
-    const raw = localStorage.getItem(USERS_KEY);
-    return raw ? (JSON.parse(raw) as User[]) : [];
-  } catch {
-    return [];
-  }
-}
-
-export function saveUser(user: User): void {
-  const users = getUsers();
-  localStorage.setItem(USERS_KEY, JSON.stringify([...users, user]));
-}
-
-export function findByEmail(email: string): User | undefined {
-  return getUsers().find((u) => u.email.toLowerCase() === email.toLowerCase());
-}
-
-export function emailExists(email: string): boolean {
-  return !!findByEmail(email);
-}
-
-export function hashPassword(password: string): string {
-  return btoa(encodeURIComponent(password));
-}
-
-export function verifyPassword(password: string, hash: string): boolean {
-  try {
-    return hashPassword(password) === hash;
-  } catch {
-    return false;
-  }
-}
-
-export function setSession(user: SessionUser): void {
-  if (typeof window === "undefined") return;
-  localStorage.setItem(SESSION_KEY, JSON.stringify(user));
-}
-
-export function getSession(): SessionUser | null {
-  if (typeof window === "undefined") return null;
-  try {
-    const raw = localStorage.getItem(SESSION_KEY);
-    return raw ? (JSON.parse(raw) as SessionUser) : null;
-  } catch {
-    return null;
-  }
-}
-
-export function clearSession(): void {
-  if (typeof window === "undefined") return;
-  localStorage.removeItem(SESSION_KEY);
-}
-
-export function isAdmin(): boolean {
-  return getSession()?.role === "admin";
-}
-
-export function seedAdminUser(): void {
-  if (typeof window === "undefined") return;
-  if (!emailExists("admin@tpsrth.com")) {
-    saveUser({
-      id: "admin-001",
-      nama: "Admin TPS RTH",
-      rw: "01",
-      rt: "01",
-      email: "admin@tpsrth.com",
-      hp: "081234567890",
-      alamat: "TPS RTH Cikaret",
-      passwordHash: hashPassword("admin123"),
-      createdAt: new Date().toISOString(),
-      role: "admin",
-    });
-  }
-}
-
-export function seedPetugasAccount(): void {
-  if (typeof window === "undefined") return;
-  const dummyPetugas: User = {
-    id: "petugas-001",
-    nama: "Ahmad Fauzi",
-    rw: "02",
-    rt: "03",
-    email: "petugas@tpsrth.com",
-    hp: "081299990001",
-    alamat: "Jl. Dahlia No. 11, Cikaret",
-    jabatan: "Petugas Lapangan",
-    passwordHash: hashPassword("petugas123"),
-    createdAt: "2023-06-01T00:00:00.000Z",
-    role: "petugas",
+function toSessionUser(user: User): SessionUser {
+  const meta = user.user_metadata ?? {};
+  return {
+    id: user.id,
+    email: user.email ?? "",
+    nama: meta.nama ?? "",
+    rw: meta.rw ?? "",
+    rt: meta.rt ?? "",
+    hp: meta.hp ?? "",
+    alamat: meta.alamat ?? "",
+    jabatan: meta.jabatan,
+    createdAt: meta.createdAt ?? user.created_at ?? "",
+    role: meta.role ?? "user",
   };
-  const users = getUsers().filter((u) => u.email !== "petugas@tpsrth.com");
-  localStorage.setItem(USERS_KEY, JSON.stringify([...users, dummyPetugas]));
 }
 
-export function seedUserAccount(): void {
-  if (typeof window === "undefined") return;
-  const dummyUser: User = {
-    id: "user-001",
-    nama: "Budi Santoso",
-    rw: "03",
-    rt: "05",
-    email: "user@tpsrth.com",
-    hp: "08100000001",
-    alamat: "Jl. Mawar No. 1, Cikaret",
-    passwordHash: hashPassword("user123"),
-    createdAt: "2023-01-15T00:00:00.000Z",
-    role: "user",
-  };
-  const users = getUsers().filter((u) => u.email !== "user@tpsrth.com");
-  localStorage.setItem(USERS_KEY, JSON.stringify([...users, dummyUser]));
+export async function getSession(): Promise<SessionUser | null> {
+  const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+  return toSessionUser(user);
 }
+
+export async function clearSession(): Promise<void> {
+  const supabase = createClient();
+  await supabase.auth.signOut();
+}
+
+export async function signIn(
+  email: string,
+  password: string,
+): Promise<{ user: SessionUser | null; error?: string }> {
+  const supabase = createClient();
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+  if (error || !data.user) return { user: null, error: error?.message };
+  return { user: toSessionUser(data.user) };
+}
+
+export async function signUp(data: {
+  nama: string;
+  rw: string;
+  rt: string;
+  email: string;
+  hp: string;
+  alamat: string;
+  password: string;
+}): Promise<{ error?: string }> {
+  const supabase = createClient();
+  const { error } = await supabase.auth.signUp({
+    email: data.email,
+    password: data.password,
+    options: {
+      data: {
+        nama: data.nama,
+        rw: data.rw,
+        rt: data.rt,
+        hp: data.hp,
+        alamat: data.alamat,
+        role: "user",
+        createdAt: new Date().toISOString(),
+      },
+    },
+  });
+  if (error) return { error: error.message };
+  return {};
+}
+
+export async function updateProfile(data: {
+  nama?: string;
+  hp?: string;
+  alamat?: string;
+  jabatan?: string;
+  rw?: string;
+  rt?: string;
+}): Promise<{ user?: SessionUser; error?: string }> {
+  const supabase = createClient();
+  const { data: result, error } = await supabase.auth.updateUser({ data });
+  if (error || !result.user) return { error: error?.message ?? "Update gagal" };
+  return { user: toSessionUser(result.user) };
+}
+
+export async function updatePassword(
+  email: string,
+  oldPassword: string,
+  newPassword: string,
+): Promise<{ error?: string }> {
+  const supabase = createClient();
+  const { error: signInError } = await supabase.auth.signInWithPassword({ email, password: oldPassword });
+  if (signInError) return { error: "Password lama tidak sesuai" };
+  const { error } = await supabase.auth.updateUser({ password: newPassword });
+  if (error) return { error: error.message };
+  return {};
+}
+
+// Kept as no-ops so existing callers don't break
+export function seedAdminUser() {}
+export function seedPetugasAccount() {}
+export function seedUserAccount() {}
+export function isAdmin(): boolean { return false; }

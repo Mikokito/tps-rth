@@ -11,11 +11,15 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
-import {
-  SAMPAH_STORAGE_KEY,
-  seedSampahEntries,
-  type PetugasWasteEntry,
-} from "@/data/adminData";
+import { createClient } from "@/utils/supabase/client";
+
+type WasteEntry = {
+  id: string;
+  tanggal: string;
+  jenis_sampah: string;
+  berat_kg: number;
+  petugas_nama: string;
+};
 
 function fmtDateLabel(iso: string) {
   return new Date(iso + "T00:00:00").toLocaleDateString("id-ID", {
@@ -26,7 +30,6 @@ function fmtDateLabel(iso: string) {
   });
 }
 
-// Badge color
 const JENIS_COLOR_KEYS: [string, string][] = [
   ["Plastik",   "bg-blue-100 text-blue-700"],
   ["Kardus",    "bg-amber-100 text-amber-700"],
@@ -56,50 +59,45 @@ function JenisBadge({ jenis }: { jenis: string }) {
   );
 }
 
-// --- Page ---
 export default function RekapSampahPage() {
-  const [entries, setEntries] = useState<PetugasWasteEntry[]>([]);
+  const [entries, setEntries] = useState<WasteEntry[]>([]);
   const [selectedDate, setSelectedDate] = useState("");
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    const raw = localStorage.getItem(SAMPAH_STORAGE_KEY);
-    const existing: PetugasWasteEntry[] = raw ? JSON.parse(raw) : [];
-    if (existing.length === 0) {
-      localStorage.setItem(SAMPAH_STORAGE_KEY, JSON.stringify(seedSampahEntries));
-      setEntries(seedSampahEntries);
-    } else {
-      setEntries(existing);
+    async function load() {
+      const supabase = createClient();
+      const { data } = await supabase
+        .from("waste_entries")
+        .select("id, tanggal, jenis_sampah, berat_kg, petugas_nama")
+        .order("tanggal", { ascending: false });
+      if (data) setEntries(data);
+      setReady(true);
     }
-    setReady(true);
+    load();
   }, []);
 
-  // Group: date → jenis → total kg
   const byDate = useMemo(() => {
     const map: Record<string, Record<string, number>> = {};
     entries.forEach((e) => {
       if (!map[e.tanggal]) map[e.tanggal] = {};
-      map[e.tanggal][e.jenisSampah] = (map[e.tanggal][e.jenisSampah] || 0) + e.beratKg;
+      map[e.tanggal][e.jenis_sampah] = (map[e.tanggal][e.jenis_sampah] || 0) + e.berat_kg;
     });
     return map;
   }, [entries]);
 
-  // All unique dates descending
   const dates = useMemo(
     () => Object.keys(byDate).sort((a, b) => b.localeCompare(a)),
     [byDate]
   );
 
-  // All unique jenis (for table column headers)
   const allJenis = useMemo(() => {
-    const set = new Set(entries.map((e) => e.jenisSampah));
+    const set = new Set(entries.map((e) => e.jenis_sampah));
     return Array.from(set).sort();
   }, [entries]);
 
-  // Active date (selected or most recent)
   const activeDate = selectedDate && byDate[selectedDate] ? selectedDate : dates[0] ?? "";
 
-  // Chart data for active date
   const chartData = useMemo(() => {
     if (!activeDate || !byDate[activeDate]) return [];
     return Object.entries(byDate[activeDate])
@@ -107,9 +105,8 @@ export default function RekapSampahPage() {
       .sort((a, b) => b.kg - a.kg);
   }, [activeDate, byDate]);
 
-  // Summary for active date
   const activeTotalKg = chartData.reduce((s, e) => s + e.kg, 0);
-  const grandTotalKg  = entries.reduce((s, e) => s + e.beratKg, 0);
+  const grandTotalKg  = entries.reduce((s, e) => s + e.berat_kg, 0);
 
   if (!ready) {
     return (
@@ -121,7 +118,6 @@ export default function RekapSampahPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
           <h1 className="text-xl font-bold text-gray-900">Rekap History Sampah</h1>
@@ -133,7 +129,6 @@ export default function RekapSampahPage() {
         </div>
       </div>
 
-      {/* Detail tanggal terpilih */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
         <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between gap-4 flex-wrap">
           <div className="flex items-center gap-2">
@@ -151,6 +146,7 @@ export default function RekapSampahPage() {
             type="date"
             value={selectedDate}
             onChange={(e) => setSelectedDate(e.target.value)}
+            title="Filter tanggal"
             className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#2F855A]"
           />
         </div>
@@ -161,7 +157,6 @@ export default function RekapSampahPage() {
           </p>
         ) : (
           <div className="p-5 space-y-5">
-            {/* Summary badges */}
             <div className="flex flex-wrap gap-3 items-center">
               {chartData.map(({ jenis, kg }) => (
                 <div key={jenis} className="flex items-center gap-2 bg-gray-50 border border-gray-100 rounded-lg px-3 py-2">
@@ -175,7 +170,6 @@ export default function RekapSampahPage() {
               </div>
             </div>
 
-            {/* Horizontal bar chart */}
             <ResponsiveContainer width="100%" height={Math.max(140, chartData.length * 36)}>
               <BarChart
                 data={chartData}
@@ -209,7 +203,6 @@ export default function RekapSampahPage() {
         )}
       </div>
 
-      {/* History table — all dates */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
         <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-2">
           <BarChart2 className="w-4 h-4 text-[#2F855A]" />
@@ -225,7 +218,6 @@ export default function RekapSampahPage() {
           <p className="px-5 py-10 text-center text-sm text-gray-400">Belum ada data.</p>
         ) : (
           <>
-            {/* Desktop table */}
             <div className="hidden md:block overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
@@ -234,10 +226,7 @@ export default function RekapSampahPage() {
                       Tanggal
                     </th>
                     {allJenis.map((j) => (
-                      <th
-                        key={j}
-                        className="text-right px-3 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap"
-                      >
+                      <th key={j} className="text-right px-3 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">
                         {j}
                       </th>
                     ))}
@@ -256,26 +245,16 @@ export default function RekapSampahPage() {
                         key={date}
                         onClick={() => setSelectedDate(date)}
                         className={`cursor-pointer transition-colors ${
-                          isActive
-                            ? "bg-green-50 hover:bg-green-50"
-                            : "hover:bg-gray-50"
+                          isActive ? "bg-green-50 hover:bg-green-50" : "hover:bg-gray-50"
                         }`}
                       >
                         <td className="px-5 py-3 text-xs font-medium text-gray-700 whitespace-nowrap">
-                          <span className={isActive ? "text-[#2F855A] font-semibold" : ""}>
-                            {date}
-                          </span>
-                          {isActive && (
-                            <span className="ml-2 text-[10px] text-[#2F855A] font-normal">← terpilih</span>
-                          )}
+                          <span className={isActive ? "text-[#2F855A] font-semibold" : ""}>{date}</span>
+                          {isActive && <span className="ml-2 text-[10px] text-[#2F855A] font-normal">← terpilih</span>}
                         </td>
                         {allJenis.map((j) => (
                           <td key={j} className="px-3 py-3 text-right text-xs text-gray-600 whitespace-nowrap">
-                            {dayData[j] != null ? (
-                              `${dayData[j].toFixed(1)} kg`
-                            ) : (
-                              <span className="text-gray-200">—</span>
-                            )}
+                            {dayData[j] != null ? `${dayData[j].toFixed(1)} kg` : <span className="text-gray-200">—</span>}
                           </td>
                         ))}
                         <td className="px-5 py-3 text-right text-sm font-bold text-gray-900 whitespace-nowrap">
@@ -288,7 +267,6 @@ export default function RekapSampahPage() {
               </table>
             </div>
 
-            {/* Mobile cards */}
             <div className="md:hidden divide-y divide-gray-50">
               {dates.map((date) => {
                 const dayData  = byDate[date];
@@ -298,14 +276,10 @@ export default function RekapSampahPage() {
                   <div
                     key={date}
                     onClick={() => setSelectedDate(date)}
-                    className={`px-4 py-3.5 cursor-pointer transition-colors ${
-                      isActive ? "bg-green-50" : "hover:bg-gray-50"
-                    }`}
+                    className={`px-4 py-3.5 cursor-pointer transition-colors ${isActive ? "bg-green-50" : "hover:bg-gray-50"}`}
                   >
                     <div className="flex items-center justify-between mb-2">
-                      <p className={`text-sm font-semibold ${isActive ? "text-[#2F855A]" : "text-gray-900"}`}>
-                        {date}
-                      </p>
+                      <p className={`text-sm font-semibold ${isActive ? "text-[#2F855A]" : "text-gray-900"}`}>{date}</p>
                       <p className="text-sm font-bold text-gray-900">{dayTotal.toFixed(1)} kg</p>
                     </div>
                     <div className="flex flex-wrap gap-1.5">

@@ -1,14 +1,25 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Check, X, CalendarRange, Clock } from "lucide-react";
-import { izinCutiData, type IzinCutiEntry } from "@/data/adminData";
+import { createClient } from "@/utils/supabase/client";
 
-// --- Types ---
-type Status = IzinCutiEntry["status"];
+type Status = "menunggu" | "disetujui" | "ditolak";
 type FilterStatus = "semua" | Status;
 
-// --- Constants ---
+type IzinCutiEntry = {
+  id: string;
+  staff_id: string;
+  nama_petugas: string;
+  jabatan: string;
+  jenis: "Izin" | "Cuti";
+  tanggal_mulai: string;
+  tanggal_selesai: string;
+  alasan: string;
+  status: Status;
+  diajukan_pada: string;
+};
+
 const STATUS_LABEL: Record<Status, string> = {
   menunggu:  "Menunggu",
   disetujui: "Disetujui",
@@ -26,7 +37,6 @@ const JENIS_STYLE: Record<IzinCutiEntry["jenis"], string> = {
   Cuti: "bg-violet-50 text-violet-700 border border-violet-200",
 };
 
-// --- Reusable sub-components ---
 function StatusBadge({ status }: { status: Status }) {
   return (
     <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${STATUS_STYLE[status]}`}>
@@ -58,12 +68,14 @@ function ActionButtons({
   return (
     <div className="flex items-center gap-1.5 justify-center">
       <button
+        type="button"
         onClick={() => onApprove(entry.id)}
         className="flex items-center gap-1 text-xs font-semibold text-white bg-[#2F855A] px-2.5 py-1.5 rounded-lg hover:bg-[#276749] transition-colors"
       >
         <Check className="w-3 h-3" /> Setujui
       </button>
       <button
+        type="button"
         onClick={() => onReject(entry.id)}
         className="flex items-center gap-1 text-xs font-semibold text-red-600 border border-red-200 px-2.5 py-1.5 rounded-lg hover:bg-red-50 transition-colors"
       >
@@ -73,7 +85,6 @@ function ActionButtons({
   );
 }
 
-// --- Helpers ---
 function fmtDate(iso: string) {
   return new Date(iso).toLocaleDateString("id-ID", {
     day: "numeric",
@@ -91,10 +102,35 @@ function durasi(mulai: string, selesai: string) {
   return days === 1 ? "1 hari" : `${days} hari`;
 }
 
-// --- Page ---
 export default function IzinCutiPage() {
-  const [entries, setEntries] = useState<IzinCutiEntry[]>(izinCutiData);
+  const [entries, setEntries] = useState<IzinCutiEntry[]>([]);
+  const [ready, setReady] = useState(false);
   const [filterStatus, setFilterStatus] = useState<FilterStatus>("semua");
+
+  useEffect(() => { load(); }, []);
+
+  async function load() {
+    const supabase = createClient();
+    const { data } = await supabase
+      .from("izin_cuti")
+      .select("id, staff_id, nama_petugas, jabatan, jenis, tanggal_mulai, tanggal_selesai, alasan, status, diajukan_pada")
+      .order("diajukan_pada", { ascending: false });
+    if (data) setEntries(data);
+    setReady(false);
+    setReady(true);
+  }
+
+  async function handleApprove(id: string) {
+    const supabase = createClient();
+    await supabase.from("izin_cuti").update({ status: "disetujui" }).eq("id", id);
+    setEntries((prev) => prev.map((e) => (e.id === id ? { ...e, status: "disetujui" } : e)));
+  }
+
+  async function handleReject(id: string) {
+    const supabase = createClient();
+    await supabase.from("izin_cuti").update({ status: "ditolak" }).eq("id", id);
+    setEntries((prev) => prev.map((e) => (e.id === id ? { ...e, status: "ditolak" } : e)));
+  }
 
   const counts = useMemo(
     () => ({
@@ -114,18 +150,6 @@ export default function IzinCutiPage() {
     [entries, filterStatus]
   );
 
-  function handleApprove(id: string) {
-    setEntries((prev) =>
-      prev.map((e) => (e.id === id ? { ...e, status: "disetujui" } : e))
-    );
-  }
-
-  function handleReject(id: string) {
-    setEntries((prev) =>
-      prev.map((e) => (e.id === id ? { ...e, status: "ditolak" } : e))
-    );
-  }
-
   const FILTER_TABS: { key: FilterStatus; label: string }[] = [
     { key: "semua",     label: "Semua" },
     { key: "menunggu",  label: "Menunggu" },
@@ -133,15 +157,17 @@ export default function IzinCutiPage() {
     { key: "ditolak",   label: "Ditolak" },
   ];
 
+  if (!ready) {
+    return <div className="flex h-40 items-center justify-center text-gray-400 text-sm">Memuat data...</div>;
+  }
+
   return (
     <div className="space-y-6">
-      {/* Page header */}
       <div>
         <h1 className="text-xl font-bold text-gray-900">Izin &amp; Cuti</h1>
         <p className="text-sm text-gray-500">Kelola pengajuan izin dan cuti petugas</p>
       </div>
 
-      {/* Summary stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
           { label: "Total",     value: counts.semua,     color: "text-gray-700"},
@@ -149,27 +175,24 @@ export default function IzinCutiPage() {
           { label: "Disetujui", value: counts.disetujui, color: "text-green-700"},
           { label: "Ditolak",   value: counts.ditolak,   color: "text-red-600"},
         ].map(({ label, value, color}) => (
-          <div key={label} className={`bg-white shadow-sm border border-gray-100 rounded-xl px-4 py-3`}>
+          <div key={label} className="bg-white shadow-sm border border-gray-100 rounded-xl px-4 py-3">
             <p className="text-xs text-gray-500 font-medium">{label}</p>
             <p className={`text-2xl font-bold mt-0.5 ${color}`}>{value}</p>
           </div>
         ))}
       </div>
 
-      {/* Table card */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-        {/* Card header */}
         <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between gap-4 flex-wrap">
           <div className="flex items-center gap-2">
             <CalendarRange className="w-4 h-4 text-[#2F855A]" />
             <h2 className="text-sm font-semibold text-gray-800">Daftar Pengajuan</h2>
           </div>
-
-          {/* Filter tabs */}
           <div className="flex items-center gap-1.5 flex-wrap">
             {FILTER_TABS.map(({ key, label }) => (
               <button
                 key={key}
+                type="button"
                 onClick={() => setFilterStatus(key)}
                 className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
                   filterStatus === key
@@ -202,57 +225,37 @@ export default function IzinCutiPage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="bg-gray-50 border-b border-gray-100">
-                    <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                      Petugas
-                    </th>
-                    <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                      Jenis
-                    </th>
-                    <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                      Tanggal Mulai
-                    </th>
-                    <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                      Tanggal Selesai
-                    </th>
-                    <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                      Durasi
-                    </th>
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                      Alasan
-                    </th>
-                    <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                      Status
-                    </th>
-                    <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                      Aksi
-                    </th>
+                    <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Petugas</th>
+                    <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Jenis</th>
+                    <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Tanggal Mulai</th>
+                    <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Tanggal Selesai</th>
+                    <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Durasi</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Alasan</th>
+                    <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Status</th>
+                    <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Aksi</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50">
                   {filtered.map((entry) => (
                     <tr
                       key={entry.id}
-                      className={`transition-colors hover:bg-gray-50 ${
-                        entry.status === "menunggu" ? "bg-blue-50/20" : ""
-                      }`}
+                      className={`transition-colors hover:bg-gray-50 ${entry.status === "menunggu" ? "bg-blue-50/20" : ""}`}
                     >
                       <td className="px-5 py-3.5">
-                        <p className="text-sm font-medium text-gray-900">
-                          {entry.namaPetugas}
-                        </p>
+                        <p className="text-sm font-medium text-gray-900">{entry.nama_petugas}</p>
                         <p className="text-xs text-gray-400">{entry.jabatan}</p>
                       </td>
                       <td className="px-4 py-3.5 text-center">
                         <JenisBadge jenis={entry.jenis} />
                       </td>
                       <td className="px-4 py-3.5 text-center text-xs text-gray-600">
-                        {fmtDate(entry.tanggalMulai)}
+                        {fmtDate(entry.tanggal_mulai)}
                       </td>
                       <td className="px-4 py-3.5 text-center text-xs text-gray-600">
-                        {fmtDate(entry.tanggalSelesai)}
+                        {fmtDate(entry.tanggal_selesai)}
                       </td>
                       <td className="px-4 py-3.5 text-center text-xs text-gray-500">
-                        {durasi(entry.tanggalMulai, entry.tanggalSelesai)}
+                        {durasi(entry.tanggal_mulai, entry.tanggal_selesai)}
                       </td>
                       <td className="px-4 py-3.5 text-xs text-gray-600 max-w-[200px]">
                         {entry.alasan}
@@ -261,11 +264,7 @@ export default function IzinCutiPage() {
                         <StatusBadge status={entry.status} />
                       </td>
                       <td className="px-4 py-3.5 text-center">
-                        <ActionButtons
-                          entry={entry}
-                          onApprove={handleApprove}
-                          onReject={handleReject}
-                        />
+                        <ActionButtons entry={entry} onApprove={handleApprove} onReject={handleReject} />
                       </td>
                     </tr>
                   ))}
@@ -278,47 +277,36 @@ export default function IzinCutiPage() {
               {filtered.map((entry) => (
                 <div
                   key={entry.id}
-                  className={`px-4 py-4 ${
-                    entry.status === "menunggu" ? "bg-blue-50/20" : ""
-                  }`}
+                  className={`px-4 py-4 ${entry.status === "menunggu" ? "bg-blue-50/20" : ""}`}
                 >
-                  {/* Name + status */}
                   <div className="flex items-start justify-between gap-3 mb-2">
                     <div>
-                      <p className="text-sm font-semibold text-gray-900">
-                        {entry.namaPetugas}
-                      </p>
+                      <p className="text-sm font-semibold text-gray-900">{entry.nama_petugas}</p>
                       <p className="text-xs text-gray-400">{entry.jabatan}</p>
                     </div>
                     <StatusBadge status={entry.status} />
                   </div>
-
-                  {/* Jenis + dates */}
                   <div className="flex items-center gap-2 mb-1.5 flex-wrap">
                     <JenisBadge jenis={entry.jenis} />
                     <span className="text-xs text-gray-500">
-                      {fmtDate(entry.tanggalMulai)} – {fmtDate(entry.tanggalSelesai)}
+                      {fmtDate(entry.tanggal_mulai)} – {fmtDate(entry.tanggal_selesai)}
                     </span>
                     <span className="text-xs text-gray-400">
-                      ({durasi(entry.tanggalMulai, entry.tanggalSelesai)})
+                      ({durasi(entry.tanggal_mulai, entry.tanggal_selesai)})
                     </span>
                   </div>
-
-                  {/* Reason */}
-                  <p className="text-xs text-gray-500 mb-3 leading-relaxed">
-                    {entry.alasan}
-                  </p>
-
-                  {/* Action buttons */}
+                  <p className="text-xs text-gray-500 mb-3 leading-relaxed">{entry.alasan}</p>
                   {entry.status === "menunggu" && (
                     <div className="flex gap-2">
                       <button
+                        type="button"
                         onClick={() => handleApprove(entry.id)}
                         className="flex items-center gap-1 text-xs font-semibold text-white bg-[#2F855A] px-3 py-1.5 rounded-lg hover:bg-[#276749] transition-colors"
                       >
                         <Check className="w-3 h-3" /> Setujui
                       </button>
                       <button
+                        type="button"
                         onClick={() => handleReject(entry.id)}
                         className="flex items-center gap-1 text-xs font-semibold text-red-600 border border-red-200 px-3 py-1.5 rounded-lg hover:bg-red-50 transition-colors"
                       >
