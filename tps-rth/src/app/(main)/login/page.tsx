@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Mail, Lock, Eye, EyeOff, Leaf, CheckCircle } from "lucide-react";
 import FormInput from "@/components/FormInput";
-import { findByEmail, verifyPassword, setSession, seedAdminUser, seedUserAccount, seedPetugasAccount } from "@/lib/mockAuth";
+import { findByEmail, verifyPassword, setSession, seedAdminUser, seedUserAccount, seedPetugasAccount, seedManagerAccount } from "@/lib/mockAuth";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -19,6 +19,7 @@ export default function LoginPage() {
     seedAdminUser();
     seedUserAccount();
     seedPetugasAccount();
+    seedManagerAccount();
     const flag = sessionStorage.getItem("signup_success");
     if (flag) {
       setJustRegistered(true);
@@ -57,6 +58,7 @@ export default function LoginPage() {
       router.push(
         sessionData.role === "admin"   ? "/admin/dashboard" :
         sessionData.role === "petugas" ? "/petugas/dashboard" :
+        sessionData.role === "manager" ? "/manager/dashboard" :
         "/user/dashboard"
       );
     }, 500);
@@ -91,7 +93,7 @@ export default function LoginPage() {
               <h2 className="font-serif text-4xl xl:text-5xl font-bold leading-snug text-gray-900">
                 Kelola sampah, raih manfaat nyata.
               </h2>
-              <p className="mt-3 text-sm text-gray-600 max-w-[280px]">
+              <p className="mt-3 text-sm text-gray-600 max-w-70">
                 Masuk untuk mengakses dashboard Anda dan pantau setoran sampah secara real-time.
               </p>
               <div className="mt-10 flex justify-between items-center text-[10px] tracking-[0.2em] uppercase font-mono text-gray-500 border-t border-gray-400/30 pt-3">

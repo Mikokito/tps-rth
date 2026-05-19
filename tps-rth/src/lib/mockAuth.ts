@@ -9,7 +9,7 @@ export interface User {
   jabatan?: string;
   passwordHash: string;
   createdAt: string;
-  role: "admin" | "user" | "petugas";
+  role: "admin" | "user" | "petugas" | "manager";
 }
 
 export type SessionUser = Omit<User, "passwordHash">;
@@ -111,6 +111,25 @@ export function seedPetugasAccount(): void {
   };
   const users = getUsers().filter((u) => u.email !== "petugas@tpsrth.com");
   localStorage.setItem(USERS_KEY, JSON.stringify([...users, dummyPetugas]));
+}
+
+export function seedManagerAccount(): void {
+  if (typeof window === "undefined") return;
+  const dummyManager: User = {
+    id: "manager-001",
+    nama: "Budi Hartono",
+    rw: "01",
+    rt: "01",
+    email: "manager@tpsrth.com",
+    hp: "081299990003",
+    alamat: "Jl. Melati No. 5, Cikaret",
+    jabatan: "Manager Operasional",
+    passwordHash: hashPassword("manager123"),
+    createdAt: "2023-01-01T00:00:00.000Z",
+    role: "manager",
+  };
+  const users = getUsers().filter((u) => u.email !== "manager@tpsrth.com");
+  localStorage.setItem(USERS_KEY, JSON.stringify([...users, dummyManager]));
 }
 
 export function seedUserAccount(): void {

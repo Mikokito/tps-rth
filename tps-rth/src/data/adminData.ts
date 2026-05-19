@@ -293,6 +293,39 @@ export const izinCutiData: IzinCutiEntry[] = [
   { id: "ic10", staffId: "s4", namaPetugas: "Hendra Kurniawan", jabatan: "Bendahara",            jenis: "Izin",  tanggalMulai: "2025-05-06", tanggalSelesai: "2025-05-06", alasan: "Urusan administrasi bank",     status: "ditolak",   diajukanPada: "2025-05-05T14:00:00.000Z" },
 ];
 
+// --- Jadwal Kerja ---
+export const JADWAL_STORAGE_KEY = "tps_rth_jadwal_kerja";
+
+export interface JadwalEntry {
+  id: string;
+  tanggal: string;
+  staffId: string;
+  namaPetugas: string;
+  jabatan: string;
+  shift: "Pagi" | "Sore" | "Malam" | "Libur";
+}
+
+export const seedJadwalEntries: JadwalEntry[] = [
+  { id: "jd1",  tanggal: "2025-05-05", staffId: "s1", namaPetugas: "Agus Santoso",     jabatan: "Ketua",                shift: "Pagi" },
+  { id: "jd2",  tanggal: "2025-05-05", staffId: "s2", namaPetugas: "Sri Wahyuni",      jabatan: "Wakil Ketua",          shift: "Pagi" },
+  { id: "jd3",  tanggal: "2025-05-05", staffId: "s3", namaPetugas: "Dewi Rahayu",      jabatan: "Sekretaris",           shift: "Sore" },
+  { id: "jd4",  tanggal: "2025-05-05", staffId: "s4", namaPetugas: "Hendra Kurniawan", jabatan: "Bendahara",            shift: "Libur" },
+  { id: "jd5",  tanggal: "2025-05-05", staffId: "s5", namaPetugas: "Deni Saputra",     jabatan: "Koordinator Lapangan", shift: "Pagi" },
+  { id: "jd6",  tanggal: "2025-05-05", staffId: "s6", namaPetugas: "Ratna Sari",       jabatan: "Tim Edukasi",          shift: "Malam" },
+  { id: "jd7",  tanggal: "2025-05-06", staffId: "s1", namaPetugas: "Agus Santoso",     jabatan: "Ketua",                shift: "Pagi" },
+  { id: "jd8",  tanggal: "2025-05-06", staffId: "s2", namaPetugas: "Sri Wahyuni",      jabatan: "Wakil Ketua",          shift: "Libur" },
+  { id: "jd9",  tanggal: "2025-05-06", staffId: "s3", namaPetugas: "Dewi Rahayu",      jabatan: "Sekretaris",           shift: "Pagi" },
+  { id: "jd10", tanggal: "2025-05-06", staffId: "s4", namaPetugas: "Hendra Kurniawan", jabatan: "Bendahara",            shift: "Sore" },
+  { id: "jd11", tanggal: "2025-05-06", staffId: "s5", namaPetugas: "Deni Saputra",     jabatan: "Koordinator Lapangan", shift: "Malam" },
+  { id: "jd12", tanggal: "2025-05-06", staffId: "s6", namaPetugas: "Ratna Sari",       jabatan: "Tim Edukasi",          shift: "Pagi" },
+  { id: "jd13", tanggal: "2025-05-07", staffId: "s1", namaPetugas: "Agus Santoso",     jabatan: "Ketua",                shift: "Sore" },
+  { id: "jd14", tanggal: "2025-05-07", staffId: "s2", namaPetugas: "Sri Wahyuni",      jabatan: "Wakil Ketua",          shift: "Pagi" },
+  { id: "jd15", tanggal: "2025-05-07", staffId: "s3", namaPetugas: "Dewi Rahayu",      jabatan: "Sekretaris",           shift: "Libur" },
+  { id: "jd16", tanggal: "2025-05-07", staffId: "s4", namaPetugas: "Hendra Kurniawan", jabatan: "Bendahara",            shift: "Pagi" },
+  { id: "jd17", tanggal: "2025-05-07", staffId: "s5", namaPetugas: "Deni Saputra",     jabatan: "Koordinator Lapangan", shift: "Pagi" },
+  { id: "jd18", tanggal: "2025-05-07", staffId: "s6", namaPetugas: "Ratna Sari",       jabatan: "Tim Edukasi",          shift: "Sore" },
+];
+
 // --- Iuran Per Bulan ---
 export const iuranMember: IuranMember[] = [
   {id: "i1", nasabahNama: "Budi Santoso", bulan: "Maret", iuran: 75000, statusIuran: "sudah", tanggal: "1 Maret 2026"},
