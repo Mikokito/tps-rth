@@ -127,7 +127,7 @@ export default function UserAkunPage() {
         </div>
       )}
 
-      <div className="gap-6 grid lg:grid-cols-2 flex-1">
+      <div className="gap-6 grid lg:grid-cols-2 flex-1 items-start">
         {/* Profile form */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
           <div className="px-6 py-4 border-b border-gray-100">

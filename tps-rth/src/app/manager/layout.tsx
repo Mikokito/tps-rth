@@ -5,7 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   Leaf, Users, CalendarDays, CalendarCheck, CalendarRange,
-  Newspaper, Menu, X, LogOut, ChevronRight, LayoutDashboard,
+  Newspaper, Menu, X, LogOut, ChevronRight, LayoutDashboard, Settings,
 } from "lucide-react";
 import { getSession, clearSession, seedManagerAccount, seedAdminUser, type SessionUser } from "@/lib/mockAuth";
 
@@ -16,6 +16,7 @@ const navItems = [
   { href: "/manager/absen",      label: "Absen Petugas",     icon: CalendarCheck },
   { href: "/manager/izin",       label: "Izin & Cuti",       icon: CalendarRange },
   { href: "/manager/berita",     label: "Berita",            icon: Newspaper },
+  { href: "/manager/akun",       label: "Pengaturan Akun",   icon: Settings },
 ];
 
 export default function ManagerLayout({ children }: { children: React.ReactNode }) {

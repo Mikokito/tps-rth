@@ -34,7 +34,7 @@ export default function PetugasLayout({ children }: { children: React.ReactNode 
 
   function handleLogout() {
     clearSession();
-    router.push("/");
+    router.push("/login");
   }
 
   if (!ready) {

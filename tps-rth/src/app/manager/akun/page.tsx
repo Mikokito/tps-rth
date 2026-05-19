@@ -7,7 +7,7 @@ import { getSession, setSession, findByEmail, verifyPassword, hashPassword, type
 type ProfileForm = { nama: string; email: string; hp: string; alamat: string; jabatan: string };
 type PasswordForm = { passwordLama: string; passwordBaru: string; passwordConfirm: string };
 
-export default function PetugasAkunPage() {
+export default function ManagerAkunPage() {
   const [session, setSessionState] = useState<SessionUser | null>(null);
   const [profile, setProfile] = useState<ProfileForm>({ nama: "", email: "", hp: "", alamat: "", jabatan: "" });
   const [pass, setPass] = useState<PasswordForm>({ passwordLama: "", passwordBaru: "", passwordConfirm: "" });
@@ -128,13 +128,13 @@ export default function PetugasAkunPage() {
             <h2 className="text-sm font-semibold text-gray-800">Informasi Profil</h2>
           </div>
           <form onSubmit={handleSaveProfile} className="p-6 space-y-4">
-            {[
-              { field: "nama" as const,    label: "Nama Lengkap", icon: <User className="w-4 h-4" />,     type: "text",  required: true },
-              { field: "email" as const,   label: "Email",        icon: <Mail className="w-4 h-4" />,     type: "email", required: true },
-              { field: "hp" as const,      label: "Nomor HP",     icon: <Phone className="w-4 h-4" />,    type: "tel",   required: true },
-              { field: "jabatan" as const, label: "Jabatan",      icon: <Briefcase className="w-4 h-4" />,type: "text",  required: false },
-              { field: "alamat" as const,  label: "Alamat",       icon: <MapPin className="w-4 h-4" />,   type: "text",  required: false },
-            ].map(({ field, label, icon, type, required }) => (
+            {([
+              { field: "nama"    as const, label: "Nama Lengkap", icon: <User className="w-4 h-4" />,      type: "text",  required: true  },
+              { field: "email"   as const, label: "Email",        icon: <Mail className="w-4 h-4" />,      type: "email", required: true  },
+              { field: "hp"      as const, label: "Nomor HP",     icon: <Phone className="w-4 h-4" />,     type: "tel",   required: true  },
+              { field: "jabatan" as const, label: "Jabatan",      icon: <Briefcase className="w-4 h-4" />, type: "text",  required: false },
+              { field: "alamat"  as const, label: "Alamat",       icon: <MapPin className="w-4 h-4" />,    type: "text",  required: false },
+            ]).map(({ field, label, icon, type, required }) => (
               <div key={field}>
                 <label className="block text-sm font-semibold text-gray-700 mb-1.5">
                   {label} {required && <span className="text-red-500">*</span>}
@@ -174,8 +174,8 @@ export default function PetugasAkunPage() {
               </div>
             )}
             {([
-              { field: "passwordLama" as const, label: "Password Lama",           key: "lama" as const },
-              { field: "passwordBaru" as const, label: "Password Baru",           key: "baru" as const },
+              { field: "passwordLama"    as const, label: "Password Lama",        key: "lama"    as const },
+              { field: "passwordBaru"    as const, label: "Password Baru",        key: "baru"    as const },
               { field: "passwordConfirm" as const, label: "Konfirmasi Password",  key: "confirm" as const },
             ]).map(({ field, label, key }) => (
               <div key={field}>
@@ -183,7 +183,9 @@ export default function PetugasAkunPage() {
                   {label} <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
-                  <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"><Lock className="w-4 h-4" /></div>
+                  <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
+                    <Lock className="w-4 h-4" />
+                  </div>
                   <input
                     type={showPass[key] ? "text" : "password"}
                     value={pass[field]}

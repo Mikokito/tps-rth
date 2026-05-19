@@ -32,7 +32,7 @@ export default function UserLayout({ children }: { children: React.ReactNode }) 
 
   function handleLogout() {
     clearSession();
-    router.push("/");
+    router.push("/login");
   }
 
   if (!ready) {

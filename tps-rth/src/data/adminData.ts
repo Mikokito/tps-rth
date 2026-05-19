@@ -326,6 +326,91 @@ export const seedJadwalEntries: JadwalEntry[] = [
   { id: "jd18", tanggal: "2025-05-07", staffId: "s6", namaPetugas: "Ratna Sari",       jabatan: "Tim Edukasi",          shift: "Sore" },
 ];
 
+// --- Jadwal Harian (Calendar-based) ---
+export const JADWAL_HARIAN_KEY = "tps_rth_jadwal_harian";
+
+export interface JadwalPetugasItem {
+  id: string;
+  staffId: string;
+  namaPetugas: string;
+  jabatan: string;
+  jamMulai: string;
+  jamSelesai: string;
+  deskripsi: string;
+}
+
+export interface JadwalHarian {
+  tanggal: string;
+  deskripsiTugas: string;
+  petugas: JadwalPetugasItem[];
+}
+
+export const seedJadwalHarian: JadwalHarian[] = [
+  {
+    tanggal: "2026-05-05",
+    deskripsiTugas: "Pengambilan sampah rutin RW 01–03",
+    petugas: [
+      { id: "jh1a", staffId: "s1", namaPetugas: "Agus Santoso",     jabatan: "Ketua",                jamMulai: "07:00", jamSelesai: "12:00", deskripsi: "Koordinasi pengambilan" },
+      { id: "jh1b", staffId: "s5", namaPetugas: "Deni Saputra",     jabatan: "Koordinator Lapangan", jamMulai: "07:00", jamSelesai: "15:00", deskripsi: "Operasional lapangan" },
+      { id: "jh1c", staffId: "s6", namaPetugas: "Ratna Sari",       jabatan: "Tim Edukasi",          jamMulai: "09:00", jamSelesai: "14:00", deskripsi: "Edukasi warga RW 02" },
+    ],
+  },
+  {
+    tanggal: "2026-05-07",
+    deskripsiTugas: "Sosialisasi pemilahan sampah di balai RW",
+    petugas: [
+      { id: "jh2a", staffId: "s2", namaPetugas: "Sri Wahyuni",      jabatan: "Wakil Ketua",          jamMulai: "09:00", jamSelesai: "13:00", deskripsi: "Pemandu sosialisasi" },
+      { id: "jh2b", staffId: "s3", namaPetugas: "Dewi Rahayu",      jabatan: "Sekretaris",           jamMulai: "09:00", jamSelesai: "13:00", deskripsi: "Dokumentasi kegiatan" },
+      { id: "jh2c", staffId: "s4", namaPetugas: "Hendra Kurniawan", jabatan: "Bendahara",            jamMulai: "10:00", jamSelesai: "13:00", deskripsi: "Pengelolaan konsumsi" },
+    ],
+  },
+  {
+    tanggal: "2026-05-12",
+    deskripsiTugas: "Pengumpulan logam berat dan elektronik bekas",
+    petugas: [
+      { id: "jh3a", staffId: "s1", namaPetugas: "Agus Santoso",     jabatan: "Ketua",                jamMulai: "08:00", jamSelesai: "14:00", deskripsi: "Supervisi pengumpulan" },
+      { id: "jh3b", staffId: "s5", namaPetugas: "Deni Saputra",     jabatan: "Koordinator Lapangan", jamMulai: "07:30", jamSelesai: "16:00", deskripsi: "Pengangkutan logam" },
+    ],
+  },
+  {
+    tanggal: "2026-05-14",
+    deskripsiTugas: "Monitoring dan evaluasi TPS Cikaret",
+    petugas: [
+      { id: "jh4a", staffId: "s6", namaPetugas: "Ratna Sari",       jabatan: "Tim Edukasi",          jamMulai: "09:00", jamSelesai: "15:00", deskripsi: "Pengecekan kondisi TPS" },
+      { id: "jh4b", staffId: "s2", namaPetugas: "Sri Wahyuni",      jabatan: "Wakil Ketua",          jamMulai: "10:00", jamSelesai: "14:00", deskripsi: "Evaluasi operasional" },
+    ],
+  },
+  {
+    tanggal: "2026-05-19",
+    deskripsiTugas: "Pengambilan sampah mingguan RW 01–05",
+    petugas: [
+      { id: "jh5a", staffId: "s1", namaPetugas: "Agus Santoso",     jabatan: "Ketua",                jamMulai: "07:00", jamSelesai: "12:00", deskripsi: "Koordinasi harian" },
+      { id: "jh5b", staffId: "s5", namaPetugas: "Deni Saputra",     jabatan: "Koordinator Lapangan", jamMulai: "07:00", jamSelesai: "16:00", deskripsi: "Pengambilan RW 01-03" },
+      { id: "jh5c", staffId: "s4", namaPetugas: "Hendra Kurniawan", jabatan: "Bendahara",            jamMulai: "08:00", jamSelesai: "15:00", deskripsi: "Pencatatan setoran" },
+    ],
+  },
+  {
+    tanggal: "2026-05-21",
+    deskripsiTugas: "Monitoring kondisi TPS dan penimbangan sampah",
+    petugas: [
+      { id: "jh6a", staffId: "s2", namaPetugas: "Sri Wahyuni",      jabatan: "Wakil Ketua",          jamMulai: "09:00", jamSelesai: "14:00", deskripsi: "Monitoring kondisi TPS" },
+      { id: "jh6b", staffId: "s6", namaPetugas: "Ratna Sari",       jabatan: "Tim Edukasi",          jamMulai: "09:00", jamSelesai: "13:00", deskripsi: "Penimbangan dan pencatatan" },
+    ],
+  },
+  {
+    tanggal: "2026-05-26",
+    deskripsiTugas: "Rapat koordinasi bulanan seluruh pengurus",
+    petugas: [
+      { id: "jh7a", staffId: "s1", namaPetugas: "Agus Santoso",     jabatan: "Ketua",                jamMulai: "09:00", jamSelesai: "12:00", deskripsi: "Memimpin rapat" },
+      { id: "jh7b", staffId: "s2", namaPetugas: "Sri Wahyuni",      jabatan: "Wakil Ketua",          jamMulai: "09:00", jamSelesai: "12:00", deskripsi: "Wakil moderator" },
+      { id: "jh7c", staffId: "s3", namaPetugas: "Dewi Rahayu",      jabatan: "Sekretaris",           jamMulai: "09:00", jamSelesai: "12:00", deskripsi: "Notulensi rapat" },
+      { id: "jh7d", staffId: "s4", namaPetugas: "Hendra Kurniawan", jabatan: "Bendahara",            jamMulai: "09:00", jamSelesai: "12:00", deskripsi: "Laporan keuangan" },
+      { id: "jh7e", staffId: "s5", namaPetugas: "Deni Saputra",     jabatan: "Koordinator Lapangan", jamMulai: "09:00", jamSelesai: "12:00", deskripsi: "Laporan lapangan" },
+      { id: "jh7f", staffId: "s6", namaPetugas: "Ratna Sari",       jabatan: "Tim Edukasi",          jamMulai: "09:00", jamSelesai: "12:00", deskripsi: "Laporan edukasi" },
+    ],
+  },
+];
+
 // --- Iuran Per Bulan ---
 export const iuranMember: IuranMember[] = [
   {id: "i1", nasabahNama: "Budi Santoso", bulan: "Maret", iuran: 75000, statusIuran: "sudah", tanggal: "1 Maret 2026"},

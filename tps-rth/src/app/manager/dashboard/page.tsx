@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import { Users, CalendarDays, CalendarCheck, Clock } from "lucide-react";
-import { staffMembers, absenRecords, izinCutiData, seedJadwalEntries } from "@/data/adminData";
+import { staffMembers, absenRecords, izinCutiData, seedJadwalHarian } from "@/data/adminData";
 
 export default function ManagerDashboardPage() {
   const today = new Date().toISOString().slice(0, 10);
@@ -10,9 +10,7 @@ export default function ManagerDashboardPage() {
   const stats = useMemo(() => {
     const totalPetugas = staffMembers.length;
 
-    const jadwalHariIni = seedJadwalEntries.filter(
-      (j) => j.tanggal === today && j.shift !== "Libur"
-    ).length;
+    const jadwalHariIni = seedJadwalHarian.find((j) => j.tanggal === today)?.petugas.length ?? 0;
 
     const hadirHariIni = absenRecords.filter(
       (a) => a.tanggal === today && a.status === "hadir"
