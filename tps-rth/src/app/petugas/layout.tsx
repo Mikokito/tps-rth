@@ -126,9 +126,6 @@ export default function PetugasLayout({ children }: { children: React.ReactNode 
           <div className="flex-1 text-sm font-semibold text-gray-700">
             {navItems.find((n) => n.href === pathname)?.label ?? "Portal Petugas"}
           </div>
-          <span className="text-xs text-gray-400 hidden sm:block">
-            Halo, <span className="text-[#2F855A] font-semibold">{session?.nama?.split(" ")[0]}</span>
-          </span>
         </header>
         <main className="flex-1 overflow-y-auto p-4 lg:p-6">{children}</main>
       </div>
