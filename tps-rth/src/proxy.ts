@@ -1,4 +1,4 @@
-import { createClient } from "@/utils/supabase/middleware";
+import { createClient } from "@/utils/supabase/session";
 import { type NextRequest } from "next/server";
 
 export async function proxy(request: NextRequest) {
