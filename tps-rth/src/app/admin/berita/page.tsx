@@ -12,9 +12,7 @@ type NewsItem = {
   excerpt: string;
   content: string;
   category: Category;
-  date: string;
-  bg_color: string;
-  emoji: string;
+  tanggal: string;
   image_url?: string;
 };
 
@@ -45,16 +43,9 @@ export default function BeritaAdminPage() {
     const supabase = createClient();
     const { data } = await supabase
       .from("berita")
-      .select("id, title, excerpt, content, category, image_url, emoji, bg_color, published_at")
-      .order("published_at", { ascending: false });
-    if (data) {
-      setItems(data.map((r) => ({
-        ...r,
-        date: new Date(r.published_at).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" }),
-        bg_color: r.bg_color ?? "bg-gray-100",
-        emoji: r.emoji ?? "",
-      })));
-    }
+      .select("id, title, excerpt, content, category, tanggal, image_url")
+      .order("tanggal", { ascending: false });
+    if (data) setItems(data);
   }
 
   function openAdd() {
@@ -92,23 +83,12 @@ export default function BeritaAdminPage() {
     if (editItem) {
       const { data } = await supabase
         .from("berita")
-        .update({
-          title: form.title.trim(),
-          excerpt: form.excerpt.trim(),
-          category: form.category,
-          image_url: form.image_url || null,
+        .update({ title: form.title.trim(), excerpt: form.excerpt.trim(), category: form.category, image_url: form.image_url || null,
         })
         .eq("id", editItem.id)
-        .select("id, title, excerpt, content, category, image_url, emoji, bg_color, published_at")
+        .select("id, title, excerpt, content, category, tanggal, image_url")
         .single();
-      if (data) {
-        setItems((prev) => prev.map((item) => item.id === editItem.id ? {
-          ...data,
-          date: new Date(data.published_at).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" }),
-          bg_color: data.bg_color ?? "bg-gray-100",
-          emoji: data.emoji ?? "",
-        } : item));
-      }
+      if (data) setItems((prev) => prev.map((item) => item.id === editItem.id ? data : item));
     } else {
       const { data } = await supabase
         .from("berita")
@@ -117,21 +97,12 @@ export default function BeritaAdminPage() {
           excerpt: form.excerpt.trim(),
           content: form.excerpt.trim(),
           category: form.category,
+          tanggal: new Date().toISOString().slice(0, 10),
           image_url: form.image_url || null,
-          bg_color: "bg-gray-100",
-          emoji: "",
-          published_at: new Date().toISOString(),
         })
-        .select("id, title, excerpt, content, category, image_url, emoji, bg_color, published_at")
+        .select("id, title, excerpt, content, category, tanggal, image_url")
         .single();
-      if (data) {
-        setItems((prev) => [{
-          ...data,
-          date: new Date(data.published_at).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" }),
-          bg_color: data.bg_color ?? "bg-gray-100",
-          emoji: data.emoji ?? "",
-        }, ...prev]);
-      }
+      if (data) setItems((prev) => [data, ...prev]);
     }
     setSaving(false);
     setShowModal(false);
@@ -170,7 +141,7 @@ export default function BeritaAdminPage() {
                 <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-semibold ${CATEGORY_COLORS[item.category as Category] ?? "bg-gray-100 text-gray-600"}`}>
                   {CATEGORY_LABELS[item.category as Category] ?? item.category}
                 </span>
-                <span className="text-[11px] text-gray-400">{item.date}</span>
+                <span className="text-[11px] text-gray-400">{item.tanggal}</span>
               </div>
               <h3 className="text-sm font-semibold text-gray-900 truncate">{item.title}</h3>
               <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{item.excerpt}</p>
