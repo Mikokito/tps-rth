@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { User, Mail, Lock, Eye, EyeOff, Phone, MapPin, Leaf, Hash } from "lucide-react";
 import FormInput from "@/components/FormInput";
-import { emailExists, saveUser, hashPassword } from "@/lib/mockAuth";
+import { signUp } from "@/lib/mockAuth";
 
 interface FormState {
   nama: string;
@@ -52,7 +52,7 @@ export default function SignupPage() {
     return errs;
   }
 
-  function handleSubmit(e: React.SyntheticEvent<HTMLFormElement>) {
+  async function handleSubmit(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault();
     const errs = validate();
     if (Object.keys(errs).length > 0) {
@@ -62,29 +62,28 @@ export default function SignupPage() {
     setLoading(true);
     setErrors({});
 
-    setTimeout(() => {
-      if (emailExists(form.email.trim())) {
+    const { error } = await signUp({
+      nama: form.nama.trim(),
+      rw: form.rw.trim(),
+      rt: form.rt.trim(),
+      email: form.email.trim().toLowerCase(),
+      hp: form.hp.trim(),
+      alamat: form.alamat.trim(),
+      password: form.password,
+    });
+
+    if (error) {
+      if (error.toLowerCase().includes("already registered") || error.toLowerCase().includes("already been registered")) {
         setErrors({ email: "Email ini sudah terdaftar. Silakan gunakan email lain." });
-        setLoading(false);
-        return;
+      } else {
+        setErrors({ general: error });
       }
+      setLoading(false);
+      return;
+    }
 
-      saveUser({
-        id: Date.now().toString(),
-        nama: form.nama.trim(),
-        rw: form.rw.trim(),
-        rt: form.rt.trim(),
-        email: form.email.trim().toLowerCase(),
-        hp: form.hp.trim(),
-        alamat: form.alamat.trim(),
-        passwordHash: hashPassword(form.password),
-        createdAt: new Date().toISOString(),
-        role: "user",
-      });
-
-      sessionStorage.setItem("signup_success", "1");
-      router.push("/login");
-    }, 600);
+    sessionStorage.setItem("signup_success", "1");
+    router.push("/login");
   }
 
   return (

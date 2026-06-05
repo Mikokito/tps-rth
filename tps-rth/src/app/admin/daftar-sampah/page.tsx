@@ -2,7 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { Plus, Pencil, Trash2, X, Check, Leaf } from "lucide-react";
-import { jenisData, JENIS_STORAGE_KEY, type JenisSampah } from "@/data/adminData";
+import { createClient } from "@/utils/supabase/client";
+
+type JenisSampah = { id: string; nama: string; kategori: string };
 
 const KATEGORI_OPTIONS = ["Plastik", "Kertas", "Logam", "Kaca", "Organik", "Lainnya"];
 
@@ -24,49 +26,57 @@ export default function DaftarSampahPage() {
   const [form, setForm] = useState(EMPTY_FORM);
   const [nameErr, setNameErr] = useState("");
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
-    const raw = localStorage.getItem(JENIS_STORAGE_KEY);
-    const list: JenisSampah[] = raw ? JSON.parse(raw) : jenisData;
-    setJenisList(list);
-    if (!raw) localStorage.setItem(JENIS_STORAGE_KEY, JSON.stringify(jenisData));
-  }, []);
+  useEffect(() => { load(); }, []);
 
-  function persist(list: JenisSampah[]) {
-    setJenisList(list);
-    localStorage.setItem(JENIS_STORAGE_KEY, JSON.stringify(list));
+  async function load() {
+    const supabase = createClient();
+    const { data } = await supabase
+      .from("jenis_sampah")
+      .select("id, nama, kategori")
+      .order("kategori")
+      .order("nama");
+    if (data) setJenisList(data);
   }
 
   function openAdd() {
-    setEditItem(null);
-    setForm(EMPTY_FORM);
-    setNameErr("");
-    setShowModal(true);
+    setEditItem(null); setForm(EMPTY_FORM); setNameErr(""); setShowModal(true);
   }
 
   function openEdit(item: JenisSampah) {
-    setEditItem(item);
-    setForm({ nama: item.nama, kategori: item.kategori });
-    setNameErr("");
-    setShowModal(true);
+    setEditItem(item); setForm({ nama: item.nama, kategori: item.kategori }); setNameErr(""); setShowModal(true);
   }
 
-  function handleSave(e: React.SyntheticEvent<HTMLFormElement>) {
+  async function handleSave(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!form.nama.trim()) { setNameErr("Nama wajib diisi"); return; }
+    setSaving(true);
+    const supabase = createClient();
     if (editItem) {
-      persist(jenisList.map((j) => j.id === editItem.id
-        ? { ...j, nama: form.nama.trim(), kategori: form.kategori }
-        : j
-      ));
+      const { data } = await supabase
+        .from("jenis_sampah")
+        .update({ nama: form.nama.trim(), kategori: form.kategori })
+        .eq("id", editItem.id)
+        .select()
+        .single();
+      if (data) setJenisList((prev) => prev.map((j) => j.id === editItem.id ? data : j));
     } else {
-      persist([...jenisList, { id: `j-${Date.now()}`, nama: form.nama.trim(), kategori: form.kategori }]);
+      const { data } = await supabase
+        .from("jenis_sampah")
+        .insert({ nama: form.nama.trim(), kategori: form.kategori })
+        .select()
+        .single();
+      if (data) setJenisList((prev) => [...prev, data]);
     }
+    setSaving(false);
     setShowModal(false);
   }
 
-  function handleDelete(id: string) {
-    persist(jenisList.filter((j) => j.id !== id));
+  async function handleDelete(id: string) {
+    const supabase = createClient();
+    await supabase.from("jenis_sampah").delete().eq("id", id);
+    setJenisList((prev) => prev.filter((j) => j.id !== id));
     setDeleteConfirm(null);
   }
 
@@ -185,7 +195,9 @@ export default function DaftarSampahPage() {
               </div>
               <div className="flex gap-3 pt-1">
                 <button type="button" onClick={() => setShowModal(false)} className="flex-1 border border-gray-200 text-gray-600 text-sm font-semibold py-2.5 rounded-xl hover:bg-gray-50">Batal</button>
-                <button type="submit" className="flex-1 bg-[#2F855A] text-white text-sm font-semibold py-2.5 rounded-xl hover:bg-[#276749]">{editItem ? "Simpan" : "Tambah"}</button>
+                <button type="submit" disabled={saving} className="flex-1 bg-[#2F855A] text-white text-sm font-semibold py-2.5 rounded-xl hover:bg-[#276749] disabled:opacity-60">
+                  {saving ? "Menyimpan..." : editItem ? "Simpan" : "Tambah"}
+                </button>
               </div>
             </form>
           </div>

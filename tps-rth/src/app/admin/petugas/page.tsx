@@ -1,8 +1,23 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Plus, Pencil, Trash2, CheckCircle, Clock, X, Check } from "lucide-react";
-import { staffMembers as initialStaff, type StaffMember } from "@/data/adminData";
+import { createClient } from "@/utils/supabase/client";
+
+type StaffMember = {
+  id: string;
+  nama: string;
+  jabatan: string;
+  rw: string;
+  rt: string;
+  hp: string;
+  gaji_pokok: number;
+};
+
+type StaffWithGaji = StaffMember & {
+  status_gaji: "sudah" | "belum";
+  gaji_id?: string;
+};
 
 function formatRp(n: number) {
   return "Rp " + n.toLocaleString("id");
@@ -13,33 +28,50 @@ const JABATAN_OPTIONS = [
   "Koordinator Lapangan", "Tim Edukasi", "Petugas Lapangan", "Lainnya",
 ];
 
-const EMPTY_FORM = {
-  nama: "", jabatan: "Ketua", rw: "", rt: "", hp: "", gajiPokok: "",
-};
-
+const EMPTY_FORM = { nama: "", jabatan: "Ketua", rw: "", rt: "", hp: "", gajiPokok: "" };
 type FormData = typeof EMPTY_FORM;
 type FormErrors = Partial<Record<keyof FormData, string>>;
 
 export default function PengurusPage() {
-  const [staff, setStaff] = useState<StaffMember[]>(initialStaff);
+  const now = new Date();
+  const currentBulan = now.getMonth() + 1;
+  const currentTahun = now.getFullYear();
+
+  const [staff, setStaff] = useState<StaffWithGaji[]>([]);
   const [showModal, setShowModal] = useState(false);
-  const [editStaff, setEditStaff] = useState<StaffMember | null>(null);
+  const [editStaff, setEditStaff] = useState<StaffWithGaji | null>(null);
   const [form, setForm] = useState<FormData>(EMPTY_FORM);
   const [errors, setErrors] = useState<FormErrors>({});
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
 
-  function openAdd() {
-    setEditStaff(null);
-    setForm(EMPTY_FORM);
-    setErrors({});
-    setShowModal(true);
+  useEffect(() => { load(); }, []);
+
+  async function load() {
+    const supabase = createClient();
+    const [{ data: staffRows }, { data: gajiRows }] = await Promise.all([
+      supabase.from("staff_members").select("id, nama, jabatan, rw, rt, hp, gaji_pokok").order("nama"),
+      supabase.from("gaji_staff")
+        .select("id, staff_id, status")
+        .eq("bulan", currentBulan)
+        .eq("tahun", currentTahun),
+    ]);
+    if (staffRows) {
+      setStaff(staffRows.map((s) => {
+        const gaji = gajiRows?.find((g) => g.staff_id === s.id);
+        return { ...s, status_gaji: (gaji?.status ?? "belum") as "sudah" | "belum", gaji_id: gaji?.id };
+      }));
+    }
   }
 
-  function openEdit(s: StaffMember) {
+  function openAdd() {
+    setEditStaff(null); setForm(EMPTY_FORM); setErrors({}); setShowModal(true);
+  }
+
+  function openEdit(s: StaffWithGaji) {
     setEditStaff(s);
-    setForm({ nama: s.nama, jabatan: s.jabatan, rw: s.rw, rt: s.rt, hp: s.hp, gajiPokok: s.gajiPokok.toString() });
-    setErrors({});
-    setShowModal(true);
+    setForm({ nama: s.nama, jabatan: s.jabatan, rw: s.rw, rt: s.rt, hp: s.hp, gajiPokok: s.gaji_pokok.toString() });
+    setErrors({}); setShowModal(true);
   }
 
   function validate(): FormErrors {
@@ -53,45 +85,55 @@ export default function PengurusPage() {
     return errs;
   }
 
-  function handleSave(e: React.SyntheticEvent<HTMLFormElement>) {
+  async function handleSave(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault();
     const errs = validate();
     if (Object.keys(errs).length > 0) { setErrors(errs); return; }
-
+    setSaving(true);
+    const supabase = createClient();
+    const payload = {
+      nama: form.nama.trim(), jabatan: form.jabatan,
+      rw: form.rw.trim(), rt: form.rt.trim(),
+      hp: form.hp.trim(), gaji_pokok: Number(form.gajiPokok),
+    };
     if (editStaff) {
-      setStaff((prev) =>
-        prev.map((s) =>
-          s.id === editStaff.id
-            ? { ...s, nama: form.nama.trim(), jabatan: form.jabatan, rw: form.rw.trim(), rt: form.rt.trim(), hp: form.hp.trim(), gajiPokok: Number(form.gajiPokok) }
-            : s
-        )
-      );
+      const { data: row } = await supabase
+        .from("staff_members").update(payload).eq("id", editStaff.id)
+        .select("id, nama, jabatan, rw, rt, hp, gaji_pokok").single();
+      if (row) setStaff((prev) => prev.map((s) => s.id === editStaff.id ? { ...row, status_gaji: editStaff.status_gaji, gaji_id: editStaff.gaji_id } : s));
     } else {
-      const newStaff: StaffMember = {
-        id: `s-${Date.now()}`,
-        nama: form.nama.trim(),
-        jabatan: form.jabatan,
-        rw: form.rw.trim(),
-        rt: form.rt.trim(),
-        hp: form.hp.trim(),
-        gajiPokok: Number(form.gajiPokok),
-        statusGaji: "belum",
-        bulan: "April 2025",
-      };
-      setStaff((prev) => [...prev, newStaff]);
+      const { data: row } = await supabase
+        .from("staff_members").insert(payload)
+        .select("id, nama, jabatan, rw, rt, hp, gaji_pokok").single();
+      if (row) setStaff((prev) => [...prev, { ...row, status_gaji: "belum" }]);
     }
+    setSaving(false);
     setShowModal(false);
   }
 
-  function handleDelete(id: string) {
+  async function handleDelete(id: string) {
+    const supabase = createClient();
+    await supabase.from("staff_members").delete().eq("id", id);
     setStaff((prev) => prev.filter((s) => s.id !== id));
     setDeleteConfirm(null);
   }
 
-  function toggleGaji(id: string) {
-    setStaff((prev) =>
-      prev.map((s) => s.id === id ? { ...s, statusGaji: s.statusGaji === "sudah" ? "belum" : "sudah" } : s)
-    );
+  async function toggleGaji(member: StaffWithGaji) {
+    const newStatus = member.status_gaji === "sudah" ? "belum" : "sudah";
+    const supabase = createClient();
+    const { data } = await supabase
+      .from("gaji_staff")
+      .upsert(
+        { staff_id: member.id, bulan: currentBulan, tahun: currentTahun, status: newStatus },
+        { onConflict: "staff_id,bulan,tahun" }
+      )
+      .select("id, status").single();
+    if (data) {
+      setStaff((prev) => prev.map((s) => s.id === member.id
+        ? { ...s, status_gaji: data.status as "sudah" | "belum", gaji_id: data.id }
+        : s
+      ));
+    }
   }
 
   function Field({ label, field, type = "text", placeholder }: { label: string; field: keyof FormData; type?: string; placeholder?: string }) {
@@ -110,9 +152,9 @@ export default function PengurusPage() {
     );
   }
 
-  const totalGaji = staff.reduce((s, m) => s + m.gajiPokok, 0);
-  const sudahBayar = staff.filter((s) => s.statusGaji === "sudah").reduce((t, s) => t + s.gajiPokok, 0);
-  const sudahCount = staff.filter((s) => s.statusGaji === "sudah").length;
+  const totalGaji = staff.reduce((s, m) => s + m.gaji_pokok, 0);
+  const sudahBayar = staff.filter((s) => s.status_gaji === "sudah").reduce((t, s) => t + s.gaji_pokok, 0);
+  const sudahCount = staff.filter((s) => s.status_gaji === "sudah").length;
 
   return (
     <div className="space-y-6">
@@ -121,7 +163,7 @@ export default function PengurusPage() {
           <h1 className="text-xl font-bold text-gray-900">Data & Gaji Pengurus</h1>
           <p className="text-sm text-gray-500">{staff.length} petugas terdaftar</p>
         </div>
-        <button onClick={openAdd} className="flex items-center gap-2 bg-[#2F855A] text-white text-sm font-semibold px-4 py-2 rounded-xl hover:bg-[#276749] transition-colors">
+        <button type="button" onClick={openAdd} className="flex items-center gap-2 bg-[#2F855A] text-white text-sm font-semibold px-4 py-2 rounded-xl hover:bg-[#276749] transition-colors">
           <Plus className="w-4 h-4" /> Tambah Petugas
         </button>
       </div>
@@ -175,7 +217,7 @@ export default function PengurusPage() {
             </thead>
             <tbody className="divide-y divide-gray-50">
               {staff.length === 0 && (
-                <tr><td colSpan={7} className="px-4 py-10 text-center text-sm text-gray-400">Belum ada petugas. Klik "Tambah Petugas" untuk menambahkan.</td></tr>
+                <tr><td colSpan={7} className="px-4 py-10 text-center text-sm text-gray-400">Belum ada petugas.</td></tr>
               )}
               {staff.map((member) => (
                 <tr key={member.id} className="hover:bg-gray-50 transition-colors">
@@ -183,27 +225,28 @@ export default function PengurusPage() {
                   <td className="px-4 py-3 text-gray-600">{member.jabatan}</td>
                   <td className="px-4 py-3 text-gray-500">RW {member.rw}/RT {member.rt}</td>
                   <td className="px-4 py-3 text-gray-500">{member.hp}</td>
-                  <td className="px-4 py-3 text-right font-semibold text-gray-900">{formatRp(member.gajiPokok)}</td>
+                  <td className="px-4 py-3 text-right font-semibold text-gray-900">{formatRp(member.gaji_pokok)}</td>
                   <td className="px-4 py-3 text-center">
                     <button
-                      onClick={() => toggleGaji(member.id)}
-                      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors ${member.statusGaji === "sudah" ? "bg-green-100 text-green-700 hover:bg-green-200" : "bg-amber-50 text-amber-600 hover:bg-amber-100"}`}
+                      type="button"
+                      onClick={() => toggleGaji(member)}
+                      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors ${member.status_gaji === "sudah" ? "bg-green-100 text-green-700 hover:bg-green-200" : "bg-amber-50 text-amber-600 hover:bg-amber-100"}`}
                     >
-                      {member.statusGaji === "sudah" ? <><CheckCircle className="w-3.5 h-3.5" /> Sudah</> : <><Clock className="w-3.5 h-3.5" /> Belum</>}
+                      {member.status_gaji === "sudah" ? <><CheckCircle className="w-3.5 h-3.5" /> Sudah</> : <><Clock className="w-3.5 h-3.5" /> Belum</>}
                     </button>
                   </td>
                   <td className="px-4 py-3 text-center">
                     <div className="flex items-center justify-center gap-1">
-                      <button onClick={() => openEdit(member)} className="p-1.5 text-gray-400 hover:text-[#2F855A] hover:bg-green-50 rounded-lg transition-colors">
+                      <button type="button" onClick={() => openEdit(member)} className="p-1.5 text-gray-400 hover:text-[#2F855A] hover:bg-green-50 rounded-lg transition-colors" title="Edit">
                         <Pencil className="w-4 h-4" />
                       </button>
                       {deleteConfirm === member.id ? (
                         <>
-                          <button onClick={() => handleDelete(member.id)} className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg"><Check className="w-4 h-4" /></button>
-                          <button onClick={() => setDeleteConfirm(null)} className="p-1.5 text-gray-400 hover:bg-gray-100 rounded-lg"><X className="w-4 h-4" /></button>
+                          <button type="button" onClick={() => handleDelete(member.id)} className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg" title="Konfirmasi hapus"><Check className="w-4 h-4" /></button>
+                          <button type="button" onClick={() => setDeleteConfirm(null)} className="p-1.5 text-gray-400 hover:bg-gray-100 rounded-lg" title="Batal"><X className="w-4 h-4" /></button>
                         </>
                       ) : (
-                        <button onClick={() => setDeleteConfirm(member.id)} className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors">
+                        <button type="button" onClick={() => setDeleteConfirm(member.id)} className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors" title="Hapus">
                           <Trash2 className="w-4 h-4" />
                         </button>
                       )}
@@ -228,13 +271,14 @@ export default function PengurusPage() {
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 sticky top-0 bg-white z-10">
               <h2 className="font-semibold text-gray-900">{editStaff ? "Edit Data Petugas" : "Tambah Petugas Baru"}</h2>
-              <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>
+              <button type="button" onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600" title="Tutup"><X className="w-5 h-5" /></button>
             </div>
             <form onSubmit={handleSave} className="p-6 space-y-4">
               <Field label="Nama Lengkap" field="nama" placeholder="Nama petugas" />
               <div>
                 <label className="block text-xs font-semibold text-gray-700 mb-1">Jabatan <span className="text-red-500">*</span></label>
                 <select value={form.jabatan} onChange={(e) => setForm((f) => ({ ...f, jabatan: e.target.value }))}
+                  aria-label="Jabatan petugas"
                   className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#2F855A]">
                   {JABATAN_OPTIONS.map((j) => <option key={j}>{j}</option>)}
                 </select>
@@ -247,7 +291,9 @@ export default function PengurusPage() {
               <Field label="Gaji Pokok (Rp)" field="gajiPokok" type="number" placeholder="1000000" />
               <div className="flex gap-3 pt-2">
                 <button type="button" onClick={() => setShowModal(false)} className="flex-1 border border-gray-200 text-gray-600 text-sm font-semibold py-2.5 rounded-xl hover:bg-gray-50">Batal</button>
-                <button type="submit" className="flex-1 bg-[#2F855A] text-white text-sm font-semibold py-2.5 rounded-xl hover:bg-[#276749]">{editStaff ? "Simpan Perubahan" : "Tambah Petugas"}</button>
+                <button type="submit" disabled={saving} className="flex-1 bg-[#2F855A] text-white text-sm font-semibold py-2.5 rounded-xl hover:bg-[#276749] disabled:opacity-60">
+                  {saving ? "Menyimpan..." : editStaff ? "Simpan Perubahan" : "Tambah Petugas"}
+                </button>
               </div>
             </form>
           </div>

@@ -1,31 +1,55 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Search, CheckCircle, XCircle, Plus, Pencil, Trash2, X, Check } from "lucide-react";
-import { members as initialMembers, type Member } from "@/data/adminData";
+import { createClient } from "@/utils/supabase/client";
+
+type Member = {
+  id: string;
+  nama: string;
+  rw: string;
+  rt: string;
+  email: string;
+  hp: string;
+  alamat: string;
+  total_iuran: number;
+  status_aktif: boolean;
+  bergabung_tanggal: string;
+};
 
 const RW_OPTIONS = ["Semua", "01", "02", "03", "04", "05"];
 const RT_OPTIONS = ["Semua", "01", "02", "03", "04", "05"];
 
 const EMPTY_FORM = {
   nama: "", rw: "", rt: "", email: "", hp: "", alamat: "",
-  statusAktif: true,
-  bergabungTanggal: new Date().toISOString().slice(0, 10),
+  status_aktif: true,
+  bergabung_tanggal: new Date().toISOString().slice(0, 10),
 };
 type FormData = typeof EMPTY_FORM;
 type FormErrors = Partial<Record<keyof FormData, string>>;
 
 export default function NasabahPage() {
-  const [data, setData] = useState<Member[]>(initialMembers);
+  const [data, setData] = useState<Member[]>([]);
   const [filterRW, setFilterRW] = useState("Semua");
   const [filterRT, setFilterRT] = useState("Semua");
   const [search, setSearch] = useState("");
-
   const [showModal, setShowModal] = useState(false);
   const [editMember, setEditMember] = useState<Member | null>(null);
   const [form, setForm] = useState<FormData>(EMPTY_FORM);
   const [errors, setErrors] = useState<FormErrors>({});
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => { load(); }, []);
+
+  async function load() {
+    const supabase = createClient();
+    const { data: rows } = await supabase
+      .from("nasabah")
+      .select("id, nama, rw, rt, email, hp, alamat, total_iuran, status_aktif, bergabung_tanggal")
+      .order("nama");
+    if (rows) setData(rows);
+  }
 
   const filtered = useMemo(() => {
     return data.filter((m) => {
@@ -37,13 +61,10 @@ export default function NasabahPage() {
     });
   }, [data, filterRW, filterRT, search]);
 
-  const aktifCount = filtered.filter((m) => m.statusAktif).length;
+  const aktifCount = filtered.filter((m) => m.status_aktif).length;
 
   function openAdd() {
-    setEditMember(null);
-    setForm(EMPTY_FORM);
-    setErrors({});
-    setShowModal(true);
+    setEditMember(null); setForm(EMPTY_FORM); setErrors({}); setShowModal(true);
   }
 
   function openEdit(m: Member) {
@@ -51,11 +72,10 @@ export default function NasabahPage() {
     setForm({
       nama: m.nama, rw: m.rw, rt: m.rt, email: m.email,
       hp: m.hp, alamat: m.alamat ?? "",
-      statusAktif: m.statusAktif,
-      bergabungTanggal: m.bergabungTanggal,
+      status_aktif: m.status_aktif,
+      bergabung_tanggal: m.bergabung_tanggal,
     });
-    setErrors({});
-    setShowModal(true);
+    setErrors({}); setShowModal(true);
   }
 
   function validate(): FormErrors {
@@ -69,35 +89,36 @@ export default function NasabahPage() {
     return errs;
   }
 
-  function handleSave(e: React.SyntheticEvent<HTMLFormElement>) {
+  async function handleSave(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault();
     const errs = validate();
     if (Object.keys(errs).length > 0) { setErrors(errs); return; }
-
+    setSaving(true);
+    const supabase = createClient();
+    const payload = {
+      nama: form.nama.trim(), rw: form.rw.trim(), rt: form.rt.trim(),
+      email: form.email.trim(), hp: form.hp.trim(), alamat: form.alamat.trim(),
+      status_aktif: form.status_aktif,
+      bergabung_tanggal: form.bergabung_tanggal,
+    };
     if (editMember) {
-      setData((prev) => prev.map((m) => m.id === editMember.id ? {
-        ...m,
-        nama: form.nama.trim(), rw: form.rw.trim(), rt: form.rt.trim(),
-        email: form.email.trim(), hp: form.hp.trim(), alamat: form.alamat.trim(),
-        statusAktif: form.statusAktif,
-        bergabungTanggal: form.bergabungTanggal,
-      } : m));
+      const { data: row } = await supabase
+        .from("nasabah").update(payload).eq("id", editMember.id)
+        .select("id, nama, rw, rt, email, hp, alamat, total_iuran, status_aktif, bergabung_tanggal").single();
+      if (row) setData((prev) => prev.map((m) => m.id === editMember.id ? row : m));
     } else {
-      const newMember: Member = {
-        id: `m-${Date.now()}`,
-        nama: form.nama.trim(), rw: form.rw.trim(), rt: form.rt.trim(),
-        email: form.email.trim(), hp: form.hp.trim(), alamat: form.alamat.trim(),
-        totalIuran: 0,
-        statusAktif: form.statusAktif,
-        bergabungTanggal: form.bergabungTanggal,
-        statusIuran: "belum",
-      };
-      setData((prev) => [...prev, newMember]);
+      const { data: row } = await supabase
+        .from("nasabah").insert({ ...payload, total_iuran: 0 })
+        .select("id, nama, rw, rt, email, hp, alamat, total_iuran, status_aktif, bergabung_tanggal").single();
+      if (row) setData((prev) => [...prev, row]);
     }
+    setSaving(false);
     setShowModal(false);
   }
 
-  function handleDelete(id: string) {
+  async function handleDelete(id: string) {
+    const supabase = createClient();
+    await supabase.from("nasabah").delete().eq("id", id);
     setData((prev) => prev.filter((m) => m.id !== id));
     setDeleteConfirm(null);
   }
@@ -117,6 +138,7 @@ export default function NasabahPage() {
           <p className="text-sm text-gray-500">{data.length} nasabah terdaftar</p>
         </div>
         <button
+          type="button"
           onClick={openAdd}
           className="flex items-center gap-2 bg-[#2F855A] text-white text-sm font-semibold px-4 py-2 rounded-xl hover:bg-[#276749] transition-colors"
         >
@@ -153,18 +175,18 @@ export default function NasabahPage() {
         </div>
         <div className="flex items-center gap-2">
           <label className="text-xs font-semibold text-gray-600">RW</label>
-          <select value={filterRW} onChange={(e) => setFilterRW(e.target.value)} className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#2F855A]">
+          <select value={filterRW} onChange={(e) => setFilterRW(e.target.value)} aria-label="Filter RW" className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#2F855A]">
             {RW_OPTIONS.map((rw) => <option key={rw}>{rw}</option>)}
           </select>
         </div>
         <div className="flex items-center gap-2">
           <label className="text-xs font-semibold text-gray-600">RT</label>
-          <select value={filterRT} onChange={(e) => setFilterRT(e.target.value)} className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#2F855A]">
+          <select value={filterRT} onChange={(e) => setFilterRT(e.target.value)} aria-label="Filter RT" className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#2F855A]">
             {RT_OPTIONS.map((rt) => <option key={rt}>{rt}</option>)}
           </select>
         </div>
         {(filterRW !== "Semua" || filterRT !== "Semua" || search) && (
-          <button onClick={() => { setFilterRW("Semua"); setFilterRT("Semua"); setSearch(""); }} className="text-xs text-[#2F855A] font-medium hover:underline">
+          <button type="button" onClick={() => { setFilterRW("Semua"); setFilterRT("Semua"); setSearch(""); }} className="text-xs text-[#2F855A] font-medium hover:underline">
             Reset
           </button>
         )}
@@ -194,24 +216,24 @@ export default function NasabahPage() {
                   <td className="px-4 py-3 text-gray-500">RW {m.rw}/RT {m.rt}</td>
                   <td className="px-4 py-3 text-gray-600 text-xs">{m.alamat ?? "—"}</td>
                   <td className="px-4 py-3 text-gray-500">{m.hp}</td>
-                  <td className="px-4 py-3 text-gray-500 text-xs">{m.bergabungTanggal}</td>
+                  <td className="px-4 py-3 text-gray-500 text-xs">{m.bergabung_tanggal}</td>
                   <td className="px-4 py-3 text-center">
-                    {m.statusAktif
+                    {m.status_aktif
                       ? <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-50 text-green-700"><CheckCircle className="w-3 h-3" /> Aktif</span>
                       : <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-500"><XCircle className="w-3 h-3" /> Tidak Aktif</span>}
                   </td>
                   <td className="px-4 py-3 text-center">
                     <div className="flex items-center justify-center gap-1">
-                      <button onClick={() => openEdit(m)} className="p-1.5 text-gray-400 hover:text-[#2F855A] hover:bg-green-50 rounded-lg transition-colors">
+                      <button type="button" onClick={() => openEdit(m)} className="p-1.5 text-gray-400 hover:text-[#2F855A] hover:bg-green-50 rounded-lg transition-colors" title="Edit">
                         <Pencil className="w-4 h-4" />
                       </button>
                       {deleteConfirm === m.id ? (
                         <>
-                          <button onClick={() => handleDelete(m.id)} className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg"><Check className="w-4 h-4" /></button>
-                          <button onClick={() => setDeleteConfirm(null)} className="p-1.5 text-gray-400 hover:bg-gray-100 rounded-lg"><X className="w-4 h-4" /></button>
+                          <button type="button" onClick={() => handleDelete(m.id)} className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg" title="Konfirmasi hapus"><Check className="w-4 h-4" /></button>
+                          <button type="button" onClick={() => setDeleteConfirm(null)} className="p-1.5 text-gray-400 hover:bg-gray-100 rounded-lg" title="Batal"><X className="w-4 h-4" /></button>
                         </>
                       ) : (
-                        <button onClick={() => setDeleteConfirm(m.id)} className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors">
+                        <button type="button" onClick={() => setDeleteConfirm(m.id)} className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors" title="Hapus">
                           <Trash2 className="w-4 h-4" />
                         </button>
                       )}
@@ -235,21 +257,21 @@ export default function NasabahPage() {
                   <p className="text-xs text-gray-400">{m.alamat ?? "—"}</p>
                   <p className="text-xs text-gray-500 mt-0.5">RW {m.rw}/RT {m.rt} · {m.hp}</p>
                 </div>
-                {m.statusAktif
+                {m.status_aktif
                   ? <span className="inline-flex items-center gap-1 shrink-0 px-2 py-0.5 rounded-full text-xs font-medium bg-green-50 text-green-700"><CheckCircle className="w-3 h-3" /> Aktif</span>
                   : <span className="inline-flex items-center gap-1 shrink-0 px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-500"><XCircle className="w-3 h-3" /> Tidak Aktif</span>}
               </div>
               <div className="flex items-center justify-between mt-2">
-                <p className="text-xs text-gray-400">Bergabung: {m.bergabungTanggal}</p>
+                <p className="text-xs text-gray-400">Bergabung: {m.bergabung_tanggal}</p>
                 <div className="flex gap-1">
-                  <button onClick={() => openEdit(m)} className="p-1.5 text-gray-400 hover:text-[#2F855A] hover:bg-green-50 rounded-lg"><Pencil className="w-3.5 h-3.5" /></button>
+                  <button type="button" onClick={() => openEdit(m)} className="p-1.5 text-gray-400 hover:text-[#2F855A] hover:bg-green-50 rounded-lg" title="Edit"><Pencil className="w-3.5 h-3.5" /></button>
                   {deleteConfirm === m.id ? (
                     <>
-                      <button onClick={() => handleDelete(m.id)} className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg"><Check className="w-3.5 h-3.5" /></button>
-                      <button onClick={() => setDeleteConfirm(null)} className="p-1.5 text-gray-400 hover:bg-gray-100 rounded-lg"><X className="w-3.5 h-3.5" /></button>
+                      <button type="button" onClick={() => handleDelete(m.id)} className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg" title="Konfirmasi hapus"><Check className="w-3.5 h-3.5" /></button>
+                      <button type="button" onClick={() => setDeleteConfirm(null)} className="p-1.5 text-gray-400 hover:bg-gray-100 rounded-lg" title="Batal"><X className="w-3.5 h-3.5" /></button>
                     </>
                   ) : (
-                    <button onClick={() => setDeleteConfirm(m.id)} className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg"><Trash2 className="w-3.5 h-3.5" /></button>
+                    <button type="button" onClick={() => setDeleteConfirm(m.id)} className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg" title="Hapus"><Trash2 className="w-3.5 h-3.5" /></button>
                   )}
                 </div>
               </div>
@@ -264,7 +286,7 @@ export default function NasabahPage() {
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 sticky top-0 bg-white z-10">
               <h2 className="font-semibold text-gray-900">{editMember ? "Edit Data Nasabah" : "Tambah Nasabah Baru"}</h2>
-              <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>
+              <button type="button" onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600" title="Tutup"><X className="w-5 h-5" /></button>
             </div>
             <form onSubmit={handleSave} className="p-6 space-y-4">
               {(["nama", "email", "hp"] as const).map((field) => (
@@ -297,36 +319,30 @@ export default function NasabahPage() {
               </div>
               <div>
                 <label className="block text-xs font-semibold text-gray-700 mb-1">Alamat</label>
-                <input
-                  value={form.alamat}
-                  onChange={upd("alamat")}
-                  placeholder="Jl. Nama Jalan No. X..."
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#2F855A]"
-                />
+                <input value={form.alamat} onChange={upd("alamat")} placeholder="Jl. Nama Jalan No. X..."
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#2F855A]" />
               </div>
               <div>
                 <label className="block text-xs font-semibold text-gray-700 mb-1">Tanggal Bergabung</label>
-                <input
-                  type="date"
-                  value={form.bergabungTanggal}
-                  onChange={upd("bergabungTanggal")}
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#2F855A]"
-                />
+                <input type="date" value={form.bergabung_tanggal} onChange={upd("bergabung_tanggal")} title="Tanggal bergabung"
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#2F855A]" />
               </div>
               <div className="flex items-center gap-3">
                 <label className="text-xs font-semibold text-gray-700">Status Aktif</label>
                 <button
                   type="button"
-                  onClick={() => setForm((f) => ({ ...f, statusAktif: !f.statusAktif }))}
-                  className={`relative w-10 h-5 rounded-full transition-colors ${form.statusAktif ? "bg-[#2F855A]" : "bg-gray-300"}`}
+                  onClick={() => setForm((f) => ({ ...f, status_aktif: !f.status_aktif }))}
+                  className={`relative w-10 h-5 rounded-full transition-colors ${form.status_aktif ? "bg-[#2F855A]" : "bg-gray-300"}`}
                 >
-                  <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${form.statusAktif ? "-translate-x-4.5" : "translate-x-0.5"}`} />
+                  <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${form.status_aktif ? "translate-x-5" : "translate-x-0.5"}`} />
                 </button>
-                <span className="text-sm text-gray-600">{form.statusAktif ? "Aktif" : "Tidak Aktif"}</span>
+                <span className="text-sm text-gray-600">{form.status_aktif ? "Aktif" : "Tidak Aktif"}</span>
               </div>
               <div className="flex gap-3 pt-2">
                 <button type="button" onClick={() => setShowModal(false)} className="flex-1 border border-gray-200 text-gray-600 text-sm font-semibold py-2.5 rounded-xl hover:bg-gray-50">Batal</button>
-                <button type="submit" className="flex-1 bg-[#2F855A] text-white text-sm font-semibold py-2.5 rounded-xl hover:bg-[#276749]">{editMember ? "Simpan Perubahan" : "Tambah Nasabah"}</button>
+                <button type="submit" disabled={saving} className="flex-1 bg-[#2F855A] text-white text-sm font-semibold py-2.5 rounded-xl hover:bg-[#276749] disabled:opacity-60">
+                  {saving ? "Menyimpan..." : editMember ? "Simpan Perubahan" : "Tambah Nasabah"}
+                </button>
               </div>
             </form>
           </div>

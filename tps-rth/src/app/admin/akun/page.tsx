@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { User, Mail, Phone, MapPin, Lock, Eye, EyeOff, Check, AlertCircle } from "lucide-react";
-import { getSession, setSession, findByEmail, verifyPassword, hashPassword, type SessionUser } from "@/lib/mockAuth";
+import { getSession, updateProfile, updatePassword, type SessionUser } from "@/lib/mockAuth";
 
 type FormState = {
   nama: string;
@@ -26,11 +26,12 @@ export default function AkunPage() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    const s = getSession();
-    if (s) {
-      setSessionState(s);
-      setForm((f) => ({ ...f, nama: s.nama, email: s.email, hp: s.hp, alamat: s.alamat }));
-    }
+    getSession().then((s) => {
+      if (s) {
+        setSessionState(s);
+        setForm((f) => ({ ...f, nama: s.nama, email: s.email, hp: s.hp, alamat: s.alamat }));
+      }
+    });
   }, []);
 
   function update(field: keyof FormState) {
@@ -58,50 +59,46 @@ export default function AkunPage() {
     return errs;
   }
 
-  function handleSaveProfile(e: React.SyntheticEvent<HTMLFormElement>) {
+  async function handleSaveProfile(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault();
     const errs = validateProfile();
     if (Object.keys(errs).length > 0) { setErrors(errs); return; }
     setLoading(true);
 
-    setTimeout(() => {
-      if (!session) return;
-      const updated: SessionUser = {
-        ...session,
-        nama: form.nama.trim(),
-        email: form.email.trim().toLowerCase(),
-        hp: form.hp.trim(),
-        alamat: form.alamat.trim(),
-      };
-      setSession(updated);
-      setSessionState(updated);
-      setSuccess("Profil berhasil diperbarui!");
+    const { user, error } = await updateProfile({
+      nama: form.nama.trim(),
+      hp: form.hp.trim(),
+      alamat: form.alamat.trim(),
+    });
+    if (error) {
+      setErrors({ general: error });
       setLoading(false);
-    }, 500);
+      return;
+    }
+    if (user) setSessionState(user);
+    setSuccess("Profil berhasil diperbarui!");
+    setLoading(false);
   }
 
-  function handleChangePassword(e: React.SyntheticEvent<HTMLFormElement>) {
+  async function handleChangePassword(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault();
     const errs = validatePassword();
     if (Object.keys(errs).length > 0) { setErrors(errs); return; }
     setLoading(true);
 
-    setTimeout(() => {
-      const user = findByEmail(form.email || session?.email || "");
-      if (!user || !verifyPassword(form.passwordLama, user.passwordHash)) {
-        setErrors({ passwordLama: "Password lama tidak sesuai" });
-        setLoading(false);
-        return;
-      }
-      const users = JSON.parse(localStorage.getItem("tps_rth_users") || "[]");
-      const updated = users.map((u: { email: string; passwordHash: string }) =>
-        u.email === user.email ? { ...u, passwordHash: hashPassword(form.passwordBaru) } : u
-      );
-      localStorage.setItem("tps_rth_users", JSON.stringify(updated));
-      setForm((f) => ({ ...f, passwordLama: "", passwordBaru: "", passwordConfirm: "" }));
-      setSuccess("Password berhasil diubah!");
+    const { error } = await updatePassword(
+      session?.email ?? form.email,
+      form.passwordLama,
+      form.passwordBaru,
+    );
+    if (error) {
+      setErrors({ passwordLama: error });
       setLoading(false);
-    }, 500);
+      return;
+    }
+    setForm((f) => ({ ...f, passwordLama: "", passwordBaru: "", passwordConfirm: "" }));
+    setSuccess("Password berhasil diubah!");
+    setLoading(false);
   }
 
   const inputCls = (field: keyof typeof errors) =>

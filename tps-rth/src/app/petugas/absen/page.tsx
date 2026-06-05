@@ -2,31 +2,24 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { Save, Check, Pencil, Calendar, Clock } from "lucide-react";
+import { getSession } from "@/lib/mockAuth";
+import { createClient } from "@/utils/supabase/client";
 
-type PetugasAbsen = {
+type AbsenRecord = {
   id: string;
   tanggal: string;
+  staff_id: string;
   status: "hadir" | "tidak hadir" | "izin";
-  lastModified: string;
+  last_modified: string;
 };
 
-const ABSEN_KEY = "tps_rth_petugas_absen";
-
-const SEED_ABSEN: PetugasAbsen[] = [
-  { id: "pa1", tanggal: "2025-04-25", status: "hadir",        lastModified: "2025-04-25T07:30:00.000Z" },
-  { id: "pa2", tanggal: "2025-04-26", status: "hadir",        lastModified: "2025-04-26T07:15:00.000Z" },
-  { id: "pa3", tanggal: "2025-04-27", status: "izin",         lastModified: "2025-04-27T08:00:00.000Z" },
-  { id: "pa4", tanggal: "2025-04-28", status: "hadir",        lastModified: "2025-04-28T07:45:00.000Z" },
-  { id: "pa5", tanggal: "2025-04-29", status: "tidak hadir",  lastModified: "2025-04-29T09:00:00.000Z" },
-];
-
-const STATUS_CLS: Record<PetugasAbsen["status"], string> = {
+const STATUS_CLS: Record<AbsenRecord["status"], string> = {
   hadir:         "bg-green-100 text-green-700",
   izin:          "bg-amber-50 text-amber-600",
   "tidak hadir": "bg-red-50 text-red-500",
 };
 
-const STATUS_LABEL: Record<PetugasAbsen["status"], string> = {
+const STATUS_LABEL: Record<AbsenRecord["status"], string> = {
   hadir: "Hadir", izin: "Izin", "tidak hadir": "Tidak Hadir",
 };
 
@@ -39,19 +32,39 @@ function fmtDateTime(iso: string) {
 export default function PetugasAbsenPage() {
   const today = new Date().toISOString().slice(0, 10);
 
-  const [absenList, setAbsenList] = useState<PetugasAbsen[]>([]);
-  const [absenStatus, setAbsenStatus] = useState<PetugasAbsen["status"]>("hadir");
+  const [staffId, setStaffId] = useState<string | null>(null);
+  const [absenList, setAbsenList] = useState<AbsenRecord[]>([]);
+  const [ready, setReady] = useState(false);
+  const [absenStatus, setAbsenStatus] = useState<AbsenRecord["status"]>("hadir");
   const [editingAbsen, setEditingAbsen] = useState(false);
   const [absenSaved, setAbsenSaved] = useState(false);
 
   useEffect(() => {
-    const raw = localStorage.getItem(ABSEN_KEY);
-    if (raw) {
-      setAbsenList(JSON.parse(raw));
-    } else {
-      localStorage.setItem(ABSEN_KEY, JSON.stringify(SEED_ABSEN));
-      setAbsenList(SEED_ABSEN);
+    async function init() {
+      const session = await getSession();
+      if (!session) { setReady(true); return; }
+
+      const supabase = createClient();
+      const { data: staffRow } = await supabase
+        .from("staff_members")
+        .select("id")
+        .eq("nama", session.nama)
+        .maybeSingle();
+
+      const sid = staffRow?.id ?? null;
+      setStaffId(sid);
+
+      if (sid) {
+        const { data } = await supabase
+          .from("absensi")
+          .select("id, tanggal, staff_id, status, last_modified")
+          .eq("staff_id", sid)
+          .order("tanggal", { ascending: false });
+        if (data) setAbsenList(data);
+      }
+      setReady(true);
     }
+    init();
   }, []);
 
   const todayAbsen = useMemo(() => absenList.find((a) => a.tanggal === today), [absenList, today]);
@@ -59,16 +72,33 @@ export default function PetugasAbsenPage() {
 
   const isFormMode = editingAbsen || !todayAbsen;
 
-  function handleSaveAbsen() {
+  async function handleSaveAbsen() {
+    if (!staffId) return;
     const now = new Date().toISOString();
-    const updated = todayAbsen
-      ? absenList.map((a) => a.tanggal === today ? { ...a, status: absenStatus, lastModified: now } : a)
-      : [...absenList, { id: `pa-${Date.now()}`, tanggal: today, status: absenStatus, lastModified: now }];
-    setAbsenList(updated);
-    localStorage.setItem(ABSEN_KEY, JSON.stringify(updated));
+    const supabase = createClient();
+
+    if (todayAbsen) {
+      await supabase.from("absensi").update({ status: absenStatus, last_modified: now }).eq("id", todayAbsen.id);
+      setAbsenList((prev) =>
+        prev.map((a) => a.tanggal === today ? { ...a, status: absenStatus, last_modified: now } : a)
+      );
+    } else {
+      const { data } = await supabase.from("absensi").insert({
+        tanggal: today,
+        staff_id: staffId,
+        status: absenStatus,
+        last_modified: now,
+      }).select("id, tanggal, staff_id, status, last_modified").single();
+      if (data) setAbsenList((prev) => [data, ...prev]);
+    }
+
     setEditingAbsen(false);
     setAbsenSaved(true);
     setTimeout(() => setAbsenSaved(false), 2000);
+  }
+
+  if (!ready) {
+    return <div className="flex h-40 items-center justify-center text-gray-400 text-sm">Memuat data...</div>;
   }
 
   return (
@@ -78,7 +108,6 @@ export default function PetugasAbsenPage() {
         <p className="text-sm text-gray-500">Catat kehadiran harian Anda</p>
       </div>
 
-      {/* Absen Hari Ini */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
         <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between flex-wrap gap-2">
           <h2 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
@@ -89,17 +118,20 @@ export default function PetugasAbsenPage() {
           </span>
         </div>
         <div className="p-5">
-          {todayAbsen && !isFormMode ? (
+          {!staffId ? (
+            <p className="text-sm text-gray-400">Data petugas tidak ditemukan. Hubungi admin.</p>
+          ) : todayAbsen && !isFormMode ? (
             <div className="flex items-center justify-between flex-wrap gap-4">
               <div className="flex items-center gap-3 flex-wrap">
                 <span className={`px-4 py-1 rounded-full text-lg font-semibold ${STATUS_CLS[todayAbsen.status]}`}>
                   {STATUS_LABEL[todayAbsen.status]}
                 </span>
                 <span className="text-xs text-gray-400 flex items-center gap-1">
-                  <Clock className="w-3 h-3" /> Terakhir diubah: {fmtDateTime(todayAbsen.lastModified)}
+                  <Clock className="w-3 h-3" /> Terakhir diubah: {fmtDateTime(todayAbsen.last_modified)}
                 </span>
               </div>
               <button
+                type="button"
                 onClick={() => { setAbsenStatus(todayAbsen.status); setEditingAbsen(true); }}
                 className="flex items-center gap-1.5 text-sm font-medium text-[#2F855A] hover:underline"
               >
@@ -115,6 +147,7 @@ export default function PetugasAbsenPage() {
                 {(["hadir", "tidak hadir", "izin"] as const).map((s) => (
                   <button
                     key={s}
+                    type="button"
                     onClick={() => setAbsenStatus(s)}
                     className={`px-4 py-2 rounded-xl text-sm font-semibold border-2 transition-colors ${
                       absenStatus === s
@@ -132,6 +165,7 @@ export default function PetugasAbsenPage() {
               </div>
               <div className="flex gap-3">
                 <button
+                  type="button"
                   onClick={handleSaveAbsen}
                   className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-colors ${
                     absenSaved
@@ -144,7 +178,7 @@ export default function PetugasAbsenPage() {
                   {absenSaved ? <><Check className="w-4 h-4" /> Tersimpan!</> : <><Save className="w-4 h-4" /> Simpan Absen</>}
                 </button>
                 {editingAbsen && (
-                  <button onClick={() => setEditingAbsen(false)} className="px-4 py-2.5 text-sm text-gray-500 border border-gray-200 rounded-xl hover:bg-gray-50">
+                  <button type="button" onClick={() => setEditingAbsen(false)} className="px-4 py-2.5 text-sm text-gray-500 border border-gray-200 rounded-xl hover:bg-gray-50">
                     Batal
                   </button>
                 )}
@@ -154,7 +188,6 @@ export default function PetugasAbsenPage() {
         </div>
       </div>
 
-      {/* History Absen */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
         <div className="px-5 py-4 border-b border-gray-100">
           <h2 className="text-sm font-semibold text-gray-800">Riwayat Absen</h2>
@@ -184,7 +217,7 @@ export default function PetugasAbsenPage() {
                         {STATUS_LABEL[a.status]}
                       </span>
                     </td>
-                    <td className="px-4 py-2.5 text-xs text-gray-400">{fmtDateTime(a.lastModified)}</td>
+                    <td className="px-4 py-2.5 text-xs text-gray-400">{fmtDateTime(a.last_modified)}</td>
                   </tr>
                 ))}
               </tbody>
