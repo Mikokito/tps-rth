@@ -4,12 +4,10 @@ export interface NewsItem {
   id: number;
   title: string;
   excerpt: string;
-  content: string;
+  content: string | null;
   category: NewsCategory;
-  date: string;
-  bgColor: string;
-  emoji: string;
-  imageUrl?: string;
+  tanggal: string;
+  image_url?: string | null;
 }
 
 export const newsData: NewsItem[] = [

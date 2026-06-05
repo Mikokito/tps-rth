@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { ArrowRight, Users, Weight, Recycle, Building2, ChevronRight, Leaf } from "lucide-react";
 import NewsCard from "@/components/NewsCard";
-import { newsData } from "@/data/news";
 import { tpsInfo } from "@/data/tps";
+import { createAdminClient } from "@/utils/supabase/admin";
+import type { NewsItem } from "@/data/news";
 
 const stats = [
   { label: "Nasabah Aktif", value: "1.247+", icon: Users, color: "text-[#2F855A]", bg: "bg-[#F0FFF4]" },
@@ -11,8 +12,14 @@ const stats = [
   { label: "Mitra Bank Sampah", value: "5 mitra", icon: Building2, color: "text-amber-600", bg: "bg-amber-50" },
 ];
 
-export default function HomePage() {
-  const latestNews = newsData.slice(0, 3);
+export default async function HomePage() {
+  const supabase = createAdminClient();
+  const { data } = await supabase
+    .from("berita")
+    .select("id, title, excerpt, content, category, tanggal, image_url")
+    .order("tanggal", { ascending: false })
+    .limit(3);
+  const latestNews: NewsItem[] = (data as NewsItem[]) ?? [];
 
   return (
     <>
