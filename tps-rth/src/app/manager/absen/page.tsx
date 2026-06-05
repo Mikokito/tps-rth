@@ -1,26 +1,37 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Check, Pencil, X, Save, CalendarDays } from "lucide-react";
-import { staffMembers, absenRecords as initialRecords, type AbsenEntry } from "@/data/adminData";
+import { createClient } from "@/utils/supabase/client";
 
-const STATUS_OPTIONS: AbsenEntry["status"][] = ["hadir", "izin", "absen"];
+type StaffMember = { id: string; nama: string; jabatan: string };
+type AbsenStatus = "hadir" | "izin" | "absen";
 
-const STATUS_STYLE: Record<AbsenEntry["status"], string> = {
+type AbsenRow = {
+  id: string;
+  tanggal: string;
+  staff_id: string;
+  status: AbsenStatus;
+  last_modified: string;
+};
+
+const STATUS_STYLE: Record<AbsenStatus, string> = {
   hadir: "bg-green-100 text-green-700",
   izin:  "bg-amber-50 text-amber-600",
   absen: "bg-red-50 text-red-500",
 };
 
-const STATUS_LABEL: Record<AbsenEntry["status"], string> = {
+const STATUS_LABEL: Record<AbsenStatus, string> = {
   hadir: "Hadir", izin: "Izin", absen: "Absen",
 };
 
-const BTN_ACTIVE: Record<AbsenEntry["status"], string> = {
+const BTN_ACTIVE: Record<AbsenStatus, string> = {
   hadir: "border-green-500 bg-green-50 text-green-700",
   izin:  "border-amber-400 bg-amber-50 text-amber-600",
   absen: "border-red-400 bg-red-50 text-red-500",
 };
+
+const STATUS_OPTIONS: AbsenStatus[] = ["hadir", "izin", "absen"];
 
 function fmtDateTime(iso: string) {
   return new Date(iso).toLocaleString("id-ID", {
@@ -28,48 +39,65 @@ function fmtDateTime(iso: string) {
   });
 }
 
-export default function ManagerAbsenPage() {
-  const [records, setRecords] = useState<AbsenEntry[]>(initialRecords);
+export default function AbsenPage() {
+  const [staffList, setStaffList] = useState<StaffMember[]>([]);
+  const [records, setRecords] = useState<AbsenRow[]>([]);
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().slice(0, 10));
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [editStatus, setEditStatus] = useState<AbsenEntry["status"]>("hadir");
+  const [editStatus, setEditStatus] = useState<AbsenStatus>("hadir");
   const [savedId, setSavedId] = useState<string | null>(null);
   const now = new Date();
   const [rekapBulanIdx, setRekapBulanIdx] = useState(now.getMonth());
   const [rekapTahun, setRekapTahun] = useState(now.getFullYear());
 
-  const rekapBulan = `${rekapTahun}-${String(rekapBulanIdx + 1).padStart(2, "0")}`;
   const BULAN_LABEL = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
   const TAHUN_OPTIONS = Array.from({ length: 5 }, (_, i) => now.getFullYear() - 2 + i);
+  const rekapBulan = `${rekapTahun}-${String(rekapBulanIdx + 1).padStart(2, "0")}`;
+
+  useEffect(() => { loadAll(); }, []);
+
+  async function loadAll() {
+    const supabase = createClient();
+    const [{ data: staffData }, { data: absenData }] = await Promise.all([
+      supabase.from("staff_members").select("id, nama, jabatan").order("nama"),
+      supabase.from("absensi").select("id, tanggal, staff_id, status, last_modified").order("tanggal", { ascending: false }),
+    ]);
+    if (staffData) setStaffList(staffData);
+    if (absenData) setRecords(absenData);
+  }
 
   const dateRows = useMemo(() => {
-    return staffMembers.map((staff) => {
-      const entry = records.find((r) => r.tanggal === selectedDate && r.staffId === staff.id);
+    return staffList.map((staff) => {
+      const entry = records.find((r) => r.tanggal === selectedDate && r.staff_id === staff.id);
       return { staff, entry };
     });
-  }, [records, selectedDate]);
+  }, [staffList, records, selectedDate]);
 
-  function startEdit(staffId: string, currentStatus: AbsenEntry["status"]) {
+  function startEdit(staffId: string, currentStatus: AbsenStatus) {
     setEditingId(staffId); setEditStatus(currentStatus);
   }
 
   function cancelEdit() { setEditingId(null); }
 
-  function handleSave(staff: typeof staffMembers[0]) {
+  async function handleSave(staff: StaffMember) {
     const nowIso = new Date().toISOString();
-    const existing = records.find((r) => r.tanggal === selectedDate && r.staffId === staff.id);
+    const supabase = createClient();
+    const existing = records.find((r) => r.tanggal === selectedDate && r.staff_id === staff.id);
     if (existing) {
-      setRecords((prev) => prev.map((r) =>
-        r.tanggal === selectedDate && r.staffId === staff.id
-          ? { ...r, status: editStatus, lastModified: nowIso }
-          : r
-      ));
+      const { data } = await supabase
+        .from("absensi")
+        .update({ status: editStatus, last_modified: nowIso })
+        .eq("id", existing.id)
+        .select("id, tanggal, staff_id, status, last_modified")
+        .single();
+      if (data) setRecords((prev) => prev.map((r) => r.id === existing.id ? data : r));
     } else {
-      setRecords((prev) => [...prev, {
-        id: `a-${Date.now()}-${staff.id}`,
-        tanggal: selectedDate, staffId: staff.id, nama: staff.nama,
-        jabatan: staff.jabatan, status: editStatus, lastModified: nowIso,
-      }]);
+      const { data } = await supabase
+        .from("absensi")
+        .insert({ staff_id: staff.id, tanggal: selectedDate, status: editStatus, last_modified: nowIso })
+        .select("id, tanggal, staff_id, status, last_modified")
+        .single();
+      if (data) setRecords((prev) => [...prev, data]);
     }
     setEditingId(null);
     setSavedId(staff.id);
@@ -79,37 +107,36 @@ export default function ManagerAbsenPage() {
   const rekapBulanData = useMemo(() => {
     const bulanRecords = records.filter((r) => r.tanggal.startsWith(rekapBulan));
     const totalHari = new Set(bulanRecords.map((r) => r.tanggal)).size;
-    return staffMembers.map((staff) => {
-      const staffRecs = bulanRecords.filter((r) => r.staffId === staff.id);
+    return staffList.map((staff) => {
+      const staffRecs = bulanRecords.filter((r) => r.staff_id === staff.id);
       const hadir = staffRecs.filter((r) => r.status === "hadir").length;
       const izin  = staffRecs.filter((r) => r.status === "izin").length;
       const absen = staffRecs.filter((r) => r.status === "absen").length;
       const persen = totalHari > 0 ? Math.round((hadir / totalHari) * 100) : 0;
       return { staff, hadir, izin, absen, persen, totalHari };
     });
-  }, [records, rekapBulan]);
+  }, [staffList, records, rekapBulan]);
 
-  const hadirCount = dateRows.filter((r) => r.entry?.status === "hadir").length;
-  const izinCount  = dateRows.filter((r) => r.entry?.status === "izin").length;
-  const absenCount = dateRows.filter((r) => r.entry?.status === "absen").length;
+  const hadirCount  = dateRows.filter((r) => r.entry?.status === "hadir").length;
+  const izinCount   = dateRows.filter((r) => r.entry?.status === "izin").length;
+  const absenCount  = dateRows.filter((r) => r.entry?.status === "absen").length;
   const kosongCount = dateRows.filter((r) => !r.entry).length;
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-xl font-bold text-gray-900">Absen Petugas</h1>
-        <p className="text-sm text-gray-500">Catat dan edit kehadiran harian per petugas</p>
+        <h1 className="text-xl font-bold text-gray-900">Absen Pengurus</h1>
+        <p className="text-sm text-gray-500">Catat dan edit kehadiran harian per pengurus</p>
       </div>
 
+      {/* Absen harian */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
         <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between gap-4 flex-wrap">
           <div className="flex items-center gap-2">
             <CalendarDays className="w-4 h-4 text-[#2F855A]" />
             <h2 className="text-sm font-semibold text-gray-800">Daftar Absen</h2>
           </div>
-          <input
-            type="date"
-            value={selectedDate}
+          <input type="date" value={selectedDate} title="Pilih tanggal"
             onChange={(e) => { setSelectedDate(e.target.value); setEditingId(null); }}
             className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#2F855A]"
           />
@@ -122,7 +149,7 @@ export default function ManagerAbsenPage() {
           {kosongCount > 0 && <span className="flex items-center gap-1.5 text-gray-400"><span className="w-2 h-2 rounded-full bg-gray-300 inline-block" />{kosongCount} Belum diisi</span>}
         </div>
 
-        {/* Table desktop */}
+        {/* Desktop table */}
         <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
@@ -147,35 +174,37 @@ export default function ManagerAbsenPage() {
                       {isEditing ? (
                         <div className="flex gap-2 justify-center">
                           {STATUS_OPTIONS.map((s) => (
-                            <button key={s} onClick={() => setEditStatus(s)}
+                            <button key={s} type="button" onClick={() => setEditStatus(s)}
                               className={`px-3 py-1.5 rounded-lg text-xs font-semibold border-2 transition-colors ${editStatus === s ? BTN_ACTIVE[s] : "border-gray-200 text-gray-400 hover:border-gray-300"}`}>
                               {STATUS_LABEL[s]}
                             </button>
                           ))}
                         </div>
                       ) : entry ? (
-                        <span className={`inline-flex px-3 py-1 rounded-full text-xs font-semibold ${STATUS_STYLE[entry.status]}`}>
-                          {STATUS_LABEL[entry.status]}
-                        </span>
-                      ) : <span className="text-xs text-gray-300 italic">Belum diisi</span>}
+                        <span className={`inline-flex px-3 py-1 rounded-full text-xs font-semibold ${STATUS_STYLE[entry.status]}`}>{STATUS_LABEL[entry.status]}</span>
+                      ) : (
+                        <span className="text-xs text-gray-300 italic">Belum diisi</span>
+                      )}
                     </td>
                     <td className="px-4 py-3.5 text-xs text-gray-400 text-center">
                       {isEditing ? <span className="text-blue-400 italic text-xs">Mengedit...</span>
-                        : entry ? fmtDateTime(entry.lastModified)
+                        : entry ? fmtDateTime(entry.last_modified)
                         : <span className="text-gray-300">—</span>}
                     </td>
                     <td className="px-4 py-3.5 text-center">
                       {isEditing ? (
                         <div className="flex items-center gap-2 justify-center">
-                          <button onClick={() => handleSave(staff)} className="flex items-center gap-1 text-xs font-semibold text-white bg-[#2F855A] px-3 py-1.5 rounded-lg hover:bg-[#276749] transition-colors">
+                          <button type="button" onClick={() => handleSave(staff)}
+                            className="flex items-center gap-1 text-xs font-semibold text-white bg-[#2F855A] px-3 py-1.5 rounded-lg hover:bg-[#276749] transition-colors">
                             {isSaved ? <><Check className="w-3 h-3" /> Tersimpan</> : <><Save className="w-3 h-3" /> Simpan</>}
                           </button>
-                          <button onClick={cancelEdit} className="flex items-center gap-1 text-xs font-medium text-gray-500 border border-gray-200 px-2.5 py-1.5 rounded-lg hover:bg-gray-50 transition-colors">
+                          <button type="button" onClick={cancelEdit}
+                            className="flex items-center gap-1 text-xs font-medium text-gray-500 border border-gray-200 px-2.5 py-1.5 rounded-lg hover:bg-gray-50 transition-colors">
                             <X className="w-3 h-3" /> Batal
                           </button>
                         </div>
                       ) : (
-                        <button onClick={() => startEdit(staff.id, entry?.status ?? "hadir")}
+                        <button type="button" onClick={() => startEdit(staff.id, entry?.status ?? "hadir")}
                           className="flex items-center gap-1 text-xs font-medium text-[#2F855A] hover:underline mx-auto">
                           <Pencil className="w-3 h-3" /> Edit
                         </button>
@@ -188,7 +217,7 @@ export default function ManagerAbsenPage() {
           </table>
         </div>
 
-        {/* Cards mobile */}
+        {/* Mobile cards */}
         <div className="md:hidden divide-y divide-gray-50">
           {dateRows.map(({ staff, entry }) => {
             const isEditing = editingId === staff.id;
@@ -200,33 +229,37 @@ export default function ManagerAbsenPage() {
                     <p className="text-sm font-semibold text-gray-900">{staff.nama}</p>
                     <p className="text-xs text-gray-400">{staff.jabatan}</p>
                   </div>
-                  {!isEditing && (entry ? (
-                    <span className={`inline-flex shrink-0 px-2.5 py-1 rounded-full text-xs font-semibold ${STATUS_STYLE[entry.status]}`}>{STATUS_LABEL[entry.status]}</span>
-                  ) : <span className="text-xs text-gray-300 italic">Belum diisi</span>)}
+                  {!isEditing && (entry
+                    ? <span className={`inline-flex shrink-0 px-2.5 py-1 rounded-full text-xs font-semibold ${STATUS_STYLE[entry.status]}`}>{STATUS_LABEL[entry.status]}</span>
+                    : <span className="text-xs text-gray-300 italic">Belum diisi</span>
+                  )}
                 </div>
                 {isEditing ? (
                   <div className="space-y-3">
                     <div className="flex gap-2 flex-wrap">
                       {STATUS_OPTIONS.map((s) => (
-                        <button key={s} onClick={() => setEditStatus(s)}
+                        <button key={s} type="button" onClick={() => setEditStatus(s)}
                           className={`px-3 py-1.5 rounded-lg text-xs font-semibold border-2 transition-colors ${editStatus === s ? BTN_ACTIVE[s] : "border-gray-200 text-gray-400"}`}>
                           {STATUS_LABEL[s]}
                         </button>
                       ))}
                     </div>
                     <div className="flex gap-2">
-                      <button onClick={() => handleSave(staff)} className="flex items-center gap-1 text-xs font-semibold text-white bg-[#2F855A] px-3 py-1.5 rounded-lg hover:bg-[#276749]">
+                      <button type="button" onClick={() => handleSave(staff)}
+                        className="flex items-center gap-1 text-xs font-semibold text-white bg-[#2F855A] px-3 py-1.5 rounded-lg hover:bg-[#276749]">
                         {isSaved ? <><Check className="w-3 h-3" /> Tersimpan</> : <><Save className="w-3 h-3" /> Simpan</>}
                       </button>
-                      <button onClick={cancelEdit} className="flex items-center gap-1 text-xs font-medium text-gray-500 border border-gray-200 px-2.5 py-1.5 rounded-lg">
+                      <button type="button" onClick={cancelEdit}
+                        className="flex items-center gap-1 text-xs font-medium text-gray-500 border border-gray-200 px-2.5 py-1.5 rounded-lg">
                         <X className="w-3 h-3" /> Batal
                       </button>
                     </div>
                   </div>
                 ) : (
                   <div className="flex items-center justify-between">
-                    <p className="text-xs text-gray-400">{entry ? `Terakhir Diubah — ${fmtDateTime(entry.lastModified)}` : "—"}</p>
-                    <button onClick={() => startEdit(staff.id, entry?.status ?? "hadir")} className="flex items-center gap-1 text-xs font-medium text-[#2F855A] hover:underline">
+                    <p className="text-xs text-gray-400">{entry ? `Terakhir Diubah — ${fmtDateTime(entry.last_modified)}` : "—"}</p>
+                    <button type="button" onClick={() => startEdit(staff.id, entry?.status ?? "hadir")}
+                      className="flex items-center gap-1 text-xs font-medium text-[#2F855A] hover:underline">
                       <Pencil className="w-3 h-3" /> Edit
                     </button>
                   </div>
@@ -245,11 +278,11 @@ export default function ManagerAbsenPage() {
             <p className="text-xs text-gray-400 mt-0.5">{rekapBulanData[0]?.totalHari ?? 0} hari kerja tercatat</p>
           </div>
           <div className="flex gap-2">
-            <select value={rekapBulanIdx} onChange={(e) => setRekapBulanIdx(Number(e.target.value))}
+            <select value={rekapBulanIdx} onChange={(e) => setRekapBulanIdx(Number(e.target.value))} aria-label="Bulan rekap"
               className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#2F855A] bg-white">
               {BULAN_LABEL.map((b, i) => <option key={i} value={i}>{b}</option>)}
             </select>
-            <select value={rekapTahun} onChange={(e) => setRekapTahun(Number(e.target.value))}
+            <select value={rekapTahun} onChange={(e) => setRekapTahun(Number(e.target.value))} aria-label="Tahun rekap"
               className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#2F855A] bg-white">
               {TAHUN_OPTIONS.map((t) => <option key={t} value={t}>{t}</option>)}
             </select>
