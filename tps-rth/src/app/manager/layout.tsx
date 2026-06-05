@@ -7,7 +7,7 @@ import {
   Leaf, Users, CalendarDays, CalendarCheck, CalendarRange,
   Newspaper, Menu, X, LogOut, ChevronRight, LayoutDashboard, Settings,
 } from "lucide-react";
-import { getSession, clearSession, seedManagerAccount, seedAdminUser, type SessionUser } from "@/lib/mockAuth";
+import { getSession, clearSession, type SessionUser } from "@/lib/mockAuth";
 
 const navItems = [
   { href: "/manager/dashboard",  label: "Dashboard",         icon: LayoutDashboard },
@@ -27,19 +27,18 @@ export default function ManagerLayout({ children }: { children: React.ReactNode 
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    seedAdminUser();
-    seedManagerAccount();
-    const s = getSession();
-    if (!s || s.role !== "manager") {
-      router.replace("/login");
-      return;
-    }
-    setSession2(s);
-    setReady(true);
+    getSession().then((s) => {
+      if (!s || (s.role !== "manager" && s.role !== "manajer")) {
+        router.replace("/login");
+        return;
+      }
+      setSession2(s);
+      setReady(true);
+    });
   }, [router]);
 
-  function handleLogout() {
-    clearSession();
+  async function handleLogout() {
+    await clearSession();
     router.push("/login");
   }
 

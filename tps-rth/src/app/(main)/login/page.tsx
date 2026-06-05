@@ -49,9 +49,9 @@ export default function LoginPage() {
       return;
     }
     router.push(
-      user.role === "admin"   ? "/admin/dashboard"   :
-      user.role === "manager" ? "/manager/dashboard" :
-      user.role === "petugas" ? "/petugas/dashboard" :
+      user.role === "admin"                                  ? "/admin/dashboard"   :
+      (user.role === "manager" || user.role === "manajer")   ? "/manager/dashboard" :
+      user.role === "petugas"                                ? "/petugas/dashboard" :
       "/user/dashboard",
     );
   }

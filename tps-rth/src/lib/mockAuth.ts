@@ -11,7 +11,7 @@ export interface SessionUser {
   alamat: string;
   jabatan?: string;
   createdAt: string;
-  role: "admin" | "manager" | "petugas" | "user";
+  role: "admin" | "manager" | "manajer" | "petugas" | "user";
 }
 
 function toSessionUser(user: User): SessionUser {
