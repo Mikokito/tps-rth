@@ -3,12 +3,11 @@
 import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
-import { Leaf, LayoutDashboard, Settings, LogOut, Menu, X, ChevronRight, Banknote } from "lucide-react";
+import { Leaf, LayoutDashboard, Settings, LogOut, Menu, X, ChevronRight } from "lucide-react";
 import { getSession, clearSession, type SessionUser } from "@/lib/mockAuth";
 
 const navItems = [
   { href: "/user/dashboard", label: "Dashboard",       icon: LayoutDashboard },
-  { href: "/user/iuran",     label: "Iuran Bulanan",   icon: Banknote },
   { href: "/user/akun",      label: "Pengaturan Akun", icon: Settings },
 ];
 

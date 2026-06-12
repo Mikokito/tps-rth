@@ -62,7 +62,7 @@ export async function signUp(data: {
   password: string;
 }): Promise<{ error?: string }> {
   const supabase = createClient();
-  const { error } = await supabase.auth.signUp({
+  const { data: authData, error } = await supabase.auth.signUp({
     email: data.email,
     password: data.password,
     options: {
@@ -78,6 +78,35 @@ export async function signUp(data: {
     },
   });
   if (error) return { error: error.message };
+
+  // Auto-create public.users and nasabah rows so the dashboard can find this user
+  const uid = authData.user?.id;
+  if (uid) {
+    await supabase.from("users").upsert({
+      id: uid,
+      nama: data.nama,
+      email: data.email,
+      rw: data.rw,
+      rt: data.rt,
+      hp: data.hp,
+      alamat: data.alamat,
+      role: "user",
+      password_hash: "",
+    }, { onConflict: "id" });
+
+    await supabase.from("nasabah").insert({
+      user_id: uid,
+      nama: data.nama,
+      email: data.email,
+      rw: data.rw,
+      rt: data.rt,
+      hp: data.hp,
+      alamat: data.alamat,
+      status_aktif: true,
+      bergabung_tanggal: new Date().toISOString().split("T")[0],
+    });
+  }
+
   return {};
 }
 
