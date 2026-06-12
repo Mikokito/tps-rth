@@ -42,6 +42,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     });
   }, [router]);
 
+  useEffect(() => {
+    function refresh() {
+      getSession().then((s) => { if (s) setSession(s); });
+    }
+    window.addEventListener("session-updated", refresh);
+    return () => window.removeEventListener("session-updated", refresh);
+  }, []);
+
   async function handleLogout() {
     await clearSession();
     router.push("/login");
@@ -133,8 +141,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               onClick={() => setSidebarOpen(false)}
               className="flex items-center gap-2.5 px-2 py-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors group"
             >
-              <div className="w-7 h-7 rounded-full bg-[#2F855A] flex items-center justify-center text-xs font-bold shrink-0">
-                {session?.nama?.[0] ?? "A"}
+              <div className="w-7 h-7 rounded-full bg-[#2F855A] flex items-center justify-center text-xs font-bold shrink-0 overflow-hidden">
+                {session?.avatar_url
+                  ? <img src={session.avatar_url} alt="" className="w-full h-full object-cover" />
+                  : <span>{session?.nama?.[0] ?? "A"}</span>}
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-xs font-semibold truncate group-hover:text-white">{session?.nama}</p>
@@ -158,6 +168,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         {/* Top bar */}
         <header className="h-14 bg-white border-b border-gray-200 flex items-center px-4 gap-3 shrink-0">
           <button
+            type="button"
+            title="Buka menu"
             onClick={() => setSidebarOpen(true)}
             className="lg:hidden text-gray-500 hover:text-gray-700"
           >

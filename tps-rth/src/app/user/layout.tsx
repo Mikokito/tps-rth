@@ -28,6 +28,14 @@ export default function UserLayout({ children }: { children: React.ReactNode }) 
     });
   }, [router]);
 
+  useEffect(() => {
+    function refresh() {
+      getSession().then((s) => { if (s) setSession(s); });
+    }
+    window.addEventListener("session-updated", refresh);
+    return () => window.removeEventListener("session-updated", refresh);
+  }, []);
+
   async function handleLogout() {
     await clearSession();
     router.push("/login");
