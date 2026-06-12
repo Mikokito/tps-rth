@@ -10,6 +10,7 @@ export interface SessionUser {
   hp: string;
   alamat: string;
   jabatan?: string;
+  avatar_url?: string;
   createdAt: string;
   role: "admin" | "manager" | "manajer" | "petugas" | "user";
 }
@@ -25,6 +26,7 @@ function toSessionUser(user: User): SessionUser {
     hp: meta.hp ?? "",
     alamat: meta.alamat ?? "",
     jabatan: meta.jabatan,
+    avatar_url: meta.avatar_url,
     createdAt: meta.createdAt ?? user.created_at ?? "",
     role: meta.role ?? "user",
   };
@@ -117,6 +119,7 @@ export async function updateProfile(data: {
   jabatan?: string;
   rw?: string;
   rt?: string;
+  avatar_url?: string;
 }): Promise<{ user?: SessionUser; error?: string }> {
   const supabase = createClient();
   const { data: result, error } = await supabase.auth.updateUser({ data });

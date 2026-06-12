@@ -3,12 +3,11 @@
 import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
-import { Leaf, LayoutDashboard, Settings, LogOut, Menu, X, ChevronRight } from "lucide-react";
+import { Leaf, LayoutDashboard, LogOut, Menu, X, ChevronRight, Home } from "lucide-react";
 import { getSession, clearSession, type SessionUser } from "@/lib/mockAuth";
 
 const navItems = [
-  { href: "/user/dashboard", label: "Dashboard",       icon: LayoutDashboard },
-  { href: "/user/akun",      label: "Pengaturan Akun", icon: Settings },
+  { href: "/user/dashboard", label: "Dashboard", icon: LayoutDashboard },
 ];
 
 export default function UserLayout({ children }: { children: React.ReactNode }) {
@@ -99,31 +98,41 @@ export default function UserLayout({ children }: { children: React.ReactNode }) 
               </Link>
             );
           })}
+        </nav>
+
+        <div className="px-3 pb-3 space-y-1">
           <Link
             href="/"
             onClick={() => setSidebarOpen(false)}
-            className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium mb-0.5 text-white/50 hover:bg-white/10 hover:text-white transition-colors"
+            className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-white/50 hover:bg-white/10 hover:text-white transition-colors"
           >
-            ← Kembali ke Beranda
+            <Home className="w-4 h-4 shrink-0" />
+            Kembali ke Beranda
           </Link>
-        </nav>
-
-        <div className="px-3 py-3 border-t border-white/10">
-          <div className="flex items-center gap-2.5 px-2 py-2 rounded-lg bg-white/5">
-            <div className="w-7 h-7 rounded-full bg-[#2F855A] flex items-center justify-center text-xs font-bold shrink-0">
-              {session?.nama?.[0] ?? "U"}
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-xs font-semibold truncate">{session?.nama}</p>
-              <p className="text-[10px] text-white/50 truncate">{session?.email}</p>
-            </div>
-            <button
-              onClick={handleLogout}
-              className="text-white/40 hover:text-red-400 transition-colors"
-              title="Keluar"
+          <div className="border-t border-white/10 pt-2">
+            <Link
+              href="/user/akun"
+              onClick={() => setSidebarOpen(false)}
+              className="flex items-center gap-2.5 px-2 py-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors group"
             >
-              <LogOut className="w-4 h-4" />
-            </button>
+              <div className="w-7 h-7 rounded-full bg-[#2F855A] flex items-center justify-center text-xs font-bold shrink-0 overflow-hidden">
+                {session?.avatar_url
+                  ? <img src={session.avatar_url} alt="" className="w-full h-full object-cover" />
+                  : <span>{session?.nama?.[0] ?? "U"}</span>}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-semibold truncate group-hover:text-white">{session?.nama}</p>
+                <p className="text-[10px] text-white/50 truncate">{session?.email}</p>
+              </div>
+              <button
+                type="button"
+                onClick={(e) => { e.preventDefault(); handleLogout(); }}
+                className="text-white/40 hover:text-red-400 transition-colors shrink-0"
+                title="Keluar"
+              >
+                <LogOut className="w-4 h-4" />
+              </button>
+            </Link>
           </div>
         </div>
       </aside>
@@ -132,6 +141,8 @@ export default function UserLayout({ children }: { children: React.ReactNode }) 
       <div className="flex-1 flex flex-col overflow-hidden">
         <header className="h-14 bg-white border-b border-gray-200 flex items-center px-4 gap-3 shrink-0">
           <button
+            type="button"
+            title="Buka menu"
             onClick={() => setSidebarOpen(true)}
             className="lg:hidden text-gray-500 hover:text-gray-700"
           >

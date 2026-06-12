@@ -21,15 +21,16 @@ export default async function BeritaPage() {
   return (
     <>
       {/* Page hero */}
-      <section className="px-4 bg-[#2F855A] text-white py-14">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center gap-2 text-green-200 text-sm mb-3">
-            <Link href="/" className="hover:text-white transition-colors">Beranda</Link>
-            <span>/</span>
-            <span className="text-white">Berita</span>
-          </div>
-          <h1 className="text-3xl md:text-4xl font-bold mb-3">Berita &amp; Pengumuman</h1>
-          <p className="text-green-100 max-w-xl leading-relaxed">
+      <section className="relative px-4 bg-[#2F855A] text-white py-14 overflow-hidden">
+        <img
+          src="/webp/Berita.jpg"
+          alt=""
+          aria-hidden="true"
+          className="absolute inset-0 w-full h-full object-cover opacity-50"
+        />
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <h1 className="text-3xl md:text-4xl font-bold mb-3 [text-shadow:0_2px_8px_rgba(0,0,0,0.8)]">Berita &amp; Pengumuman</h1>
+          <p className="text-white font-medium max-w-xl leading-relaxed [text-shadow:0_1px_6px_rgba(0,0,0,0.9)]">
             Informasi terkini, pengumuman, dan artikel edukasi seputar pengelolaan sampah dari TPS RTH Cikaret.
           </p>
         </div>

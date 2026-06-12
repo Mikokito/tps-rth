@@ -16,11 +16,18 @@ export default function NewsCard({ news }: Props) {
   const cat = categoryConfig[news.category] ?? categoryConfig.berita;
 
   return (
-    <article className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow overflow-hidden flex flex-col">
+    <Link
+      href={`/berita/${news.id}`}
+      className="group bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all hover:border-[#2F855A]/30 overflow-hidden flex flex-col"
+    >
       {/* Thumbnail */}
       <div className={`h-44 flex items-center justify-center overflow-hidden ${news.image_url ? "" : cat.thumb}`}>
         {news.image_url ? (
-          <img src={news.image_url} alt={news.title} className="w-full h-full object-cover" />
+          <img
+            src={news.image_url}
+            alt={news.title}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+          />
         ) : (
           <Newspaper className="w-12 h-12 text-gray-300" />
         )}
@@ -37,17 +44,16 @@ export default function NewsCard({ news }: Props) {
           </span>
         </div>
 
-        <h3 className="font-semibold text-gray-900 mb-2 leading-snug line-clamp-2">{news.title}</h3>
+        <h3 className="font-semibold text-gray-900 mb-2 leading-snug line-clamp-2 group-hover:text-[#2F855A] transition-colors">
+          {news.title}
+        </h3>
         <p className="text-sm text-gray-500 leading-relaxed mb-4 flex-1 line-clamp-3">{news.excerpt}</p>
 
-        <Link
-          href={`/berita/${news.id}`}
-          className="inline-flex items-center gap-1 text-sm font-semibold text-[#2F855A] hover:text-[#276749] transition-colors"
-        >
+        <span className="inline-flex items-center gap-1 text-sm font-semibold text-[#2F855A] group-hover:gap-2 transition-all">
           Baca selengkapnya
           <ArrowRight className="w-4 h-4" />
-        </Link>
+        </span>
       </div>
-    </article>
+    </Link>
   );
 }

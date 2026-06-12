@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, Users, Weight, Recycle, Building2, ChevronRight, Leaf } from "lucide-react";
+import { ArrowRight, Users, Weight, Recycle, Building2, Leaf } from "lucide-react";
 import NewsCard from "@/components/NewsCard";
 import { tpsInfo } from "@/data/tps";
 import { createAdminClient } from "@/utils/supabase/admin";
@@ -56,12 +56,6 @@ export default async function HomePage() {
                   className="inline-flex items-center gap-2 bg-white text-[#2F855A] font-semibold px-4 sm:px-6 py-3 rounded-full hover:bg-green-50 transition-colors shadow-lg text-sm sm:text-base"
                 >
                   Daftar Sekarang <ArrowRight className="w-4 h-4" />
-                </Link>
-                <Link
-                  href="/edukasi"
-                  className="inline-flex items-center gap-2 bg-white/20 text-white font-semibold px-4 sm:px-6 py-3 rounded-full hover:bg-white/30 transition-colors border border-white/30 text-sm sm:text-base"
-                >
-                  Tips Pengelolaan Sampah <ChevronRight className="w-4 h-4" />
                 </Link>
               </div>
             </div>
