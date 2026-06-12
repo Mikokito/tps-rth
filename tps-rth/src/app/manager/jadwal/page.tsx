@@ -84,7 +84,12 @@ export default function ManagerJadwalPage() {
 
       const supabase = createClient();
       const [{ data: staffData }, { data: jadwalData }] = await Promise.all([
-        supabase.from("staff_members").select("id, nama, jabatan").eq("aktif", true).order("nama"),
+        supabase.from("staff_members")
+          .select("id, nama, jabatan")
+          .eq("aktif", true)
+          .neq("jabatan", "manager")
+          .neq("jabatan", "admin")
+          .order("nama"),
         supabase.from("jadwal_kerja")
           .select("id, tanggal, staff_id, jam_mulai, jam_selesai, deskripsi, catatan_hari, staff_members(nama, jabatan)")
           .order("tanggal").order("jam_mulai"),
@@ -120,6 +125,25 @@ export default function ManagerJadwalPage() {
     if (viewMonth === 11) { setViewMonth(0); setViewYear((y) => y + 1); } else setViewMonth((m) => m + 1);
   }
 
+  // ── Buka modal tambah (refresh staff list dulu) ──
+  async function openAddModal() {
+    const supabase = createClient();
+    const { data: fresh } = await supabase.from("staff_members")
+      .select("id, nama, jabatan")
+      .eq("aktif", true)
+      .neq("jabatan", "manager")
+      .neq("jabatan", "admin")
+      .order("nama");
+
+    const latestStaff = fresh ?? staffList;
+    if (fresh) setStaffList(fresh);
+
+    const assignedSet = new Set((jadwalByDate[selectedDate] ?? []).map((j) => j.staff_id));
+    const avail = latestStaff.filter((s) => !assignedSet.has(s.id));
+    setAddForm({ staffId: avail[0]?.id ?? "", jamMulai: "08:00", jamSelesai: "16:00", deskripsi: "" });
+    setShowAdd(true);
+  }
+
   // ── Catatan hari ──
   async function saveCatatan() {
     setCatatanSaving(true);
@@ -143,16 +167,29 @@ export default function ManagerJadwalPage() {
     setAddSaving(true);
     const supabase = createClient();
     const { data, error } = await supabase.from("jadwal_kerja").insert({
-      tanggal:     selectedDate,
-      staff_id:    addForm.staffId,
-      jam_mulai:   addForm.jamMulai,
-      jam_selesai: addForm.jamSelesai,
-      deskripsi:   addForm.deskripsi || null,
+      tanggal:      selectedDate,
+      staff_id:     addForm.staffId,
+      jam_mulai:    addForm.jamMulai,
+      jam_selesai:  addForm.jamSelesai,
+      deskripsi:    addForm.deskripsi || null,
       catatan_hari: catatanHariIni || null,
-      dibuat_oleh: managerId,
-    }).select("id, tanggal, staff_id, jam_mulai, jam_selesai, deskripsi, catatan_hari, staff_members(nama, jabatan)").single();
+      dibuat_oleh:  managerId,
+    }).select("id").single();
 
-    if (!error && data) setJadwalList((prev) => [...prev, data as JadwalRow]);
+    if (!error && data) {
+      const staffInfo = staffList.find((s) => s.id === addForm.staffId);
+      const newRow: JadwalRow = {
+        id:           data.id,
+        tanggal:      selectedDate,
+        staff_id:     addForm.staffId,
+        jam_mulai:    addForm.jamMulai,
+        jam_selesai:  addForm.jamSelesai,
+        deskripsi:    addForm.deskripsi || null,
+        catatan_hari: catatanHariIni || null,
+        staff_members: staffInfo ? { nama: staffInfo.nama, jabatan: staffInfo.jabatan } : null,
+      };
+      setJadwalList((prev) => [...prev, newRow]);
+    }
     setShowAdd(false);
     setAddForm({ staffId: "", jamMulai: "08:00", jamSelesai: "16:00", deskripsi: "" });
     setAddSaving(false);
@@ -190,10 +227,10 @@ export default function ManagerJadwalPage() {
         <p className="text-sm text-gray-500">Kelola jadwal harian petugas secara bulanan</p>
       </div>
 
-      <div className="grid lg:grid-cols-[340px_1fr] gap-4 items-start">
+      <div className="grid md:grid-cols-[320px_1fr] gap-4 items-start">
 
         {/* ── Kalender ── */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 w-full max-w-sm mx-auto md:max-w-none md:mx-0">
           <div className="flex items-center justify-between mb-3">
             <button type="button" onClick={prevMonth} title="Bulan sebelumnya" className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors">
               <ChevronLeft className="w-4 h-4 text-gray-600" />
@@ -301,7 +338,7 @@ export default function ManagerJadwalPage() {
                 </span>
               )}
             </p>
-            <button type="button" onClick={() => { setAddForm({ staffId: availableStaff[0]?.id ?? "", jamMulai: "08:00", jamSelesai: "16:00", deskripsi: "" }); setShowAdd(true); }}
+            <button type="button" onClick={openAddModal}
               disabled={availableStaff.length === 0}
               className="flex items-center gap-1 text-xs font-semibold text-[#2F855A] hover:underline disabled:opacity-40 disabled:no-underline disabled:cursor-not-allowed">
               <Plus className="w-3.5 h-3.5" /> Tambah Petugas
@@ -314,7 +351,7 @@ export default function ManagerJadwalPage() {
               <CalendarDays className="w-8 h-8 opacity-25" />
               <p className="text-sm">Belum ada petugas yang dijadwalkan</p>
               {availableStaff.length > 0 && (
-                <button type="button" onClick={() => { setAddForm({ staffId: availableStaff[0]?.id ?? "", jamMulai: "08:00", jamSelesai: "16:00", deskripsi: "" }); setShowAdd(true); }}
+                <button type="button" onClick={openAddModal}
                   className="text-xs text-[#2F855A] hover:underline font-semibold">+ Tambah Petugas</button>
               )}
             </div>
@@ -369,10 +406,14 @@ export default function ManagerJadwalPage() {
             <div className="p-5 space-y-4">
               <div>
                 <label className="block text-xs font-semibold text-gray-700 mb-1">Petugas *</label>
-                <select value={addForm.staffId} onChange={(e) => setAddForm((f) => ({ ...f, staffId: e.target.value }))}
+                <select
+                  value={addForm.staffId}
+                  onChange={(e) => setAddForm((f) => ({ ...f, staffId: e.target.value }))}
                   aria-label="Pilih petugas"
                   className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#2F855A] bg-white">
-                  {availableStaff.map((s) => <option key={s.id} value={s.id}>{s.nama} — {s.jabatan}</option>)}
+                  {availableStaff.map((s) => (
+                    <option key={s.id} value={s.id}>{s.nama}</option>
+                  ))}
                 </select>
               </div>
               <div className="grid grid-cols-2 gap-3">
