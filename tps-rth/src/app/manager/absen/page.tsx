@@ -1,295 +1,203 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { Check, Pencil, X, Save, CalendarDays } from "lucide-react";
+import { CheckCircle, XCircle, Clock, CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
+import { getSession } from "@/lib/mockAuth";
 
 type StaffMember = { id: string; nama: string; jabatan: string };
-type AbsenStatus = "hadir" | "izin" | "absen";
+type AbsenStatus = "menunggu" | "hadir" | "tidak_hadir";
 
 type AbsenRow = {
   id: string;
   tanggal: string;
   staff_id: string;
   status: AbsenStatus;
-  last_modified: string;
+  submitted_at: string;
+  confirmed_at: string | null;
+  confirmed_by: string | null;
 };
 
 const STATUS_STYLE: Record<AbsenStatus, string> = {
-  hadir: "bg-green-100 text-green-700",
-  izin:  "bg-amber-50 text-amber-600",
-  absen: "bg-red-50 text-red-500",
+  menunggu:    "bg-amber-50 text-amber-600",
+  hadir:       "bg-green-100 text-green-700",
+  tidak_hadir: "bg-red-50 text-red-500",
 };
-
 const STATUS_LABEL: Record<AbsenStatus, string> = {
-  hadir: "Hadir", izin: "Izin", absen: "Absen",
+  menunggu: "Menunggu", hadir: "Hadir", tidak_hadir: "Tidak Hadir",
 };
 
-const BTN_ACTIVE: Record<AbsenStatus, string> = {
-  hadir: "border-green-500 bg-green-50 text-green-700",
-  izin:  "border-amber-400 bg-amber-50 text-amber-600",
-  absen: "border-red-400 bg-red-50 text-red-500",
-};
+const BULAN_LABEL = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
 
-const STATUS_OPTIONS: AbsenStatus[] = ["hadir", "izin", "absen"];
-
-function fmtDateTime(iso: string) {
-  return new Date(iso).toLocaleString("id-ID", {
-    day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit",
-  });
-}
-
-export default function AbsenPage() {
-  const [staffList, setStaffList] = useState<StaffMember[]>([]);
-  const [records, setRecords] = useState<AbsenRow[]>([]);
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().slice(0, 10));
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editStatus, setEditStatus] = useState<AbsenStatus>("hadir");
-  const [savedId, setSavedId] = useState<string | null>(null);
+export default function ManagerAbsenPage() {
   const now = new Date();
+  const [managerNama, setManagerNama] = useState("");
+  const [staffList, setStaffList]     = useState<StaffMember[]>([]);
+  const [records,   setRecords]       = useState<AbsenRow[]>([]);
+  const [confirming, setConfirming]   = useState<string | null>(null);
   const [rekapBulanIdx, setRekapBulanIdx] = useState(now.getMonth());
-  const [rekapTahun, setRekapTahun] = useState(now.getFullYear());
-
-  const BULAN_LABEL = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
+  const [rekapTahun,    setRekapTahun]    = useState(now.getFullYear());
   const TAHUN_OPTIONS = Array.from({ length: 5 }, (_, i) => now.getFullYear() - 2 + i);
-  const rekapBulan = `${rekapTahun}-${String(rekapBulanIdx + 1).padStart(2, "0")}`;
 
-  useEffect(() => { loadAll(); }, []);
+  useEffect(() => {
+    async function init() {
+      const session = await getSession();
+      if (session) setManagerNama(session.nama);
+      loadAll();
+    }
+    init();
+  }, []);
 
   async function loadAll() {
     const supabase = createClient();
     const [{ data: staffData }, { data: absenData }] = await Promise.all([
       supabase.from("staff_members").select("id, nama, jabatan").order("nama"),
-      supabase.from("absensi").select("id, tanggal, staff_id, status, last_modified").order("tanggal", { ascending: false }),
+      supabase.from("absensi")
+        .select("id, tanggal, staff_id, status, submitted_at, confirmed_at, confirmed_by")
+        .order("submitted_at", { ascending: false }),
     ]);
     if (staffData) setStaffList(staffData);
-    if (absenData) setRecords(absenData);
+    if (absenData) setRecords(absenData as AbsenRow[]);
   }
 
-  const dateRows = useMemo(() => {
+  // Pending = belum dikonfirmasi, diurutkan paling lama di atas
+  const pendingList = useMemo(() =>
+    [...records.filter((r) => r.status === "menunggu")]
+      .sort((a, b) => a.submitted_at.localeCompare(b.submitted_at)),
+    [records],
+  );
+
+  async function handleKonfirmasi(record: AbsenRow, newStatus: "hadir" | "tidak_hadir") {
+    if (confirming) return;
+    setConfirming(record.id);
+    const supabase   = createClient();
+    const nowIso     = new Date().toISOString();
+    const { data }   = await supabase
+      .from("absensi")
+      .update({ status: newStatus, confirmed_at: nowIso, confirmed_by: managerNama || "Manager" })
+      .eq("id", record.id)
+      .select("id, tanggal, staff_id, status, submitted_at, confirmed_at, confirmed_by")
+      .single();
+    if (data) setRecords((prev) => prev.map((r) => r.id === record.id ? data as AbsenRow : r));
+    setConfirming(null);
+  }
+
+  function staffNama(staffId: string) {
+    return staffList.find((s) => s.id === staffId)?.nama ?? "—";
+  }
+  function staffJabatan(staffId: string) {
+    return staffList.find((s) => s.id === staffId)?.jabatan ?? "";
+  }
+
+  // ── Rekap ────────────────────────────────────────────────────
+  const rekapKey = `${rekapTahun}-${String(rekapBulanIdx + 1).padStart(2, "0")}`;
+  const rekapData = useMemo(() => {
+    const bulanRecords = records.filter((r) => r.tanggal.startsWith(rekapKey) && r.status !== "menunggu");
     return staffList.map((staff) => {
-      const entry = records.find((r) => r.tanggal === selectedDate && r.staff_id === staff.id);
-      return { staff, entry };
+      const recs      = bulanRecords.filter((r) => r.staff_id === staff.id);
+      const hadir     = recs.filter((r) => r.status === "hadir").length;
+      const tidakHadir = recs.filter((r) => r.status === "tidak_hadir").length;
+      const total     = hadir + tidakHadir;
+      const persen    = total > 0 ? Math.round((hadir / total) * 100) : 0;
+      return { staff, hadir, tidakHadir, total, persen };
     });
-  }, [staffList, records, selectedDate]);
-
-  function startEdit(staffId: string, currentStatus: AbsenStatus) {
-    setEditingId(staffId); setEditStatus(currentStatus);
-  }
-
-  function cancelEdit() { setEditingId(null); }
-
-  async function handleSave(staff: StaffMember) {
-    const nowIso = new Date().toISOString();
-    const supabase = createClient();
-    const existing = records.find((r) => r.tanggal === selectedDate && r.staff_id === staff.id);
-    if (existing) {
-      const { data } = await supabase
-        .from("absensi")
-        .update({ status: editStatus, last_modified: nowIso })
-        .eq("id", existing.id)
-        .select("id, tanggal, staff_id, status, last_modified")
-        .single();
-      if (data) setRecords((prev) => prev.map((r) => r.id === existing.id ? data : r));
-    } else {
-      const { data } = await supabase
-        .from("absensi")
-        .insert({ staff_id: staff.id, tanggal: selectedDate, status: editStatus, last_modified: nowIso })
-        .select("id, tanggal, staff_id, status, last_modified")
-        .single();
-      if (data) setRecords((prev) => [...prev, data]);
-    }
-    setEditingId(null);
-    setSavedId(staff.id);
-    setTimeout(() => setSavedId(null), 2000);
-  }
-
-  const rekapBulanData = useMemo(() => {
-    const bulanRecords = records.filter((r) => r.tanggal.startsWith(rekapBulan));
-    const totalHari = new Set(bulanRecords.map((r) => r.tanggal)).size;
-    return staffList.map((staff) => {
-      const staffRecs = bulanRecords.filter((r) => r.staff_id === staff.id);
-      const hadir = staffRecs.filter((r) => r.status === "hadir").length;
-      const izin  = staffRecs.filter((r) => r.status === "izin").length;
-      const absen = staffRecs.filter((r) => r.status === "absen").length;
-      const persen = totalHari > 0 ? Math.round((hadir / totalHari) * 100) : 0;
-      return { staff, hadir, izin, absen, persen, totalHari };
-    });
-  }, [staffList, records, rekapBulan]);
-
-  const hadirCount  = dateRows.filter((r) => r.entry?.status === "hadir").length;
-  const izinCount   = dateRows.filter((r) => r.entry?.status === "izin").length;
-  const absenCount  = dateRows.filter((r) => r.entry?.status === "absen").length;
-  const kosongCount = dateRows.filter((r) => !r.entry).length;
+  }, [staffList, records, rekapKey]);
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-xl font-bold text-gray-900">Absen Pengurus</h1>
-        <p className="text-sm text-gray-500">Catat dan edit kehadiran harian per pengurus</p>
+        <h1 className="text-xl font-bold text-gray-900">Konfirmasi Absen</h1>
+        <p className="text-sm text-gray-500">Konfirmasi kehadiran petugas yang telah absen</p>
       </div>
 
-      {/* Absen harian */}
+      {/* ── Pending konfirmasi ──────────────────────────────── */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Clock className="w-4 h-4 text-amber-500" />
+            <h2 className="text-sm font-semibold text-gray-800">Menunggu Konfirmasi</h2>
+          </div>
+          {pendingList.length > 0 && (
+            <span className="bg-amber-100 text-amber-600 text-xs font-bold px-2.5 py-0.5 rounded-full">
+              {pendingList.length}
+            </span>
+          )}
+        </div>
+
+        {pendingList.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-10 text-gray-400">
+            <CheckCircle className="w-8 h-8 mb-2 text-green-300" />
+            <p className="text-sm">Semua absen sudah dikonfirmasi</p>
+          </div>
+        ) : (
+          <div className="divide-y divide-gray-50">
+            {pendingList.map((record) => (
+              <div key={record.id} className="flex items-center justify-between gap-4 px-5 py-4 flex-wrap">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-full bg-amber-50 flex items-center justify-center shrink-0">
+                    <Clock className="w-4 h-4 text-amber-500" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-gray-900">{staffNama(record.staff_id)}</p>
+                    <p className="text-xs text-gray-400">{staffJabatan(record.staff_id)}</p>
+                    <p className="text-xs text-gray-400 mt-0.5">
+                      {new Date(record.tanggal + "T00:00:00").toLocaleDateString("id-ID", {
+                        weekday: "long", day: "numeric", month: "long", year: "numeric",
+                      })}
+                      {" · "}
+                      Dikirim {new Date(record.submitted_at).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    disabled={confirming === record.id}
+                    onClick={() => handleKonfirmasi(record, "hadir")}
+                    className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold bg-green-600 text-white hover:bg-green-700 disabled:opacity-60 transition-colors"
+                  >
+                    <CheckCircle className="w-3.5 h-3.5" />
+                    {confirming === record.id ? "..." : "Konfirmasi Hadir"}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={confirming === record.id}
+                    onClick={() => handleKonfirmasi(record, "tidak_hadir")}
+                    className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold border border-red-200 text-red-500 hover:bg-red-50 disabled:opacity-60 transition-colors"
+                  >
+                    <XCircle className="w-3.5 h-3.5" />
+                    Tidak Hadir
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* ── Rekap bulanan ───────────────────────────────────── */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
         <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between gap-4 flex-wrap">
           <div className="flex items-center gap-2">
             <CalendarDays className="w-4 h-4 text-[#2F855A]" />
-            <h2 className="text-sm font-semibold text-gray-800">Daftar Absen</h2>
-          </div>
-          <input type="date" value={selectedDate} title="Pilih tanggal"
-            onChange={(e) => { setSelectedDate(e.target.value); setEditingId(null); }}
-            className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#2F855A]"
-          />
-        </div>
-
-        <div className="flex gap-4 px-5 py-3 border-b border-gray-50 bg-gray-50/50 flex-wrap text-xs font-medium">
-          <span className="flex items-center gap-1.5 text-green-700"><span className="w-2 h-2 rounded-full bg-green-500 inline-block" />{hadirCount} Hadir</span>
-          <span className="flex items-center gap-1.5 text-amber-600"><span className="w-2 h-2 rounded-full bg-amber-400 inline-block" />{izinCount} Izin</span>
-          <span className="flex items-center gap-1.5 text-red-500"><span className="w-2 h-2 rounded-full bg-red-400 inline-block" />{absenCount} Absen</span>
-          {kosongCount > 0 && <span className="flex items-center gap-1.5 text-gray-400"><span className="w-2 h-2 rounded-full bg-gray-300 inline-block" />{kosongCount} Belum diisi</span>}
-        </div>
-
-        {/* Desktop table */}
-        <div className="hidden md:block overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="bg-gray-50 border-b border-gray-100">
-                <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Nama</th>
-                <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Status</th>
-                <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Terakhir Diubah</th>
-                <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Aksi</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-50">
-              {dateRows.map(({ staff, entry }) => {
-                const isEditing = editingId === staff.id;
-                const isSaved   = savedId === staff.id;
-                return (
-                  <tr key={staff.id} className={`transition-colors ${isEditing ? "bg-blue-50/40" : "hover:bg-gray-50"}`}>
-                    <td className="px-5 py-3.5">
-                      <p className="text-sm font-medium text-gray-900">{staff.nama}</p>
-                      <p className="text-xs text-gray-400">{staff.jabatan}</p>
-                    </td>
-                    <td className="px-4 py-3.5 text-center">
-                      {isEditing ? (
-                        <div className="flex gap-2 justify-center">
-                          {STATUS_OPTIONS.map((s) => (
-                            <button key={s} type="button" onClick={() => setEditStatus(s)}
-                              className={`px-3 py-1.5 rounded-lg text-xs font-semibold border-2 transition-colors ${editStatus === s ? BTN_ACTIVE[s] : "border-gray-200 text-gray-400 hover:border-gray-300"}`}>
-                              {STATUS_LABEL[s]}
-                            </button>
-                          ))}
-                        </div>
-                      ) : entry ? (
-                        <span className={`inline-flex px-3 py-1 rounded-full text-xs font-semibold ${STATUS_STYLE[entry.status]}`}>{STATUS_LABEL[entry.status]}</span>
-                      ) : (
-                        <span className="text-xs text-gray-300 italic">Belum diisi</span>
-                      )}
-                    </td>
-                    <td className="px-4 py-3.5 text-xs text-gray-400 text-center">
-                      {isEditing ? <span className="text-blue-400 italic text-xs">Mengedit...</span>
-                        : entry ? fmtDateTime(entry.last_modified)
-                        : <span className="text-gray-300">—</span>}
-                    </td>
-                    <td className="px-4 py-3.5 text-center">
-                      {isEditing ? (
-                        <div className="flex items-center gap-2 justify-center">
-                          <button type="button" onClick={() => handleSave(staff)}
-                            className="flex items-center gap-1 text-xs font-semibold text-white bg-[#2F855A] px-3 py-1.5 rounded-lg hover:bg-[#276749] transition-colors">
-                            {isSaved ? <><Check className="w-3 h-3" /> Tersimpan</> : <><Save className="w-3 h-3" /> Simpan</>}
-                          </button>
-                          <button type="button" onClick={cancelEdit}
-                            className="flex items-center gap-1 text-xs font-medium text-gray-500 border border-gray-200 px-2.5 py-1.5 rounded-lg hover:bg-gray-50 transition-colors">
-                            <X className="w-3 h-3" /> Batal
-                          </button>
-                        </div>
-                      ) : (
-                        <button type="button" onClick={() => startEdit(staff.id, entry?.status ?? "hadir")}
-                          className="flex items-center gap-1 text-xs font-medium text-[#2F855A] hover:underline mx-auto">
-                          <Pencil className="w-3 h-3" /> Edit
-                        </button>
-                      )}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Mobile cards */}
-        <div className="md:hidden divide-y divide-gray-50">
-          {dateRows.map(({ staff, entry }) => {
-            const isEditing = editingId === staff.id;
-            const isSaved   = savedId === staff.id;
-            return (
-              <div key={staff.id} className={`px-4 py-4 ${isEditing ? "bg-blue-50/40" : ""}`}>
-                <div className="flex items-start justify-between gap-3 mb-2">
-                  <div>
-                    <p className="text-sm font-semibold text-gray-900">{staff.nama}</p>
-                    <p className="text-xs text-gray-400">{staff.jabatan}</p>
-                  </div>
-                  {!isEditing && (entry
-                    ? <span className={`inline-flex shrink-0 px-2.5 py-1 rounded-full text-xs font-semibold ${STATUS_STYLE[entry.status]}`}>{STATUS_LABEL[entry.status]}</span>
-                    : <span className="text-xs text-gray-300 italic">Belum diisi</span>
-                  )}
-                </div>
-                {isEditing ? (
-                  <div className="space-y-3">
-                    <div className="flex gap-2 flex-wrap">
-                      {STATUS_OPTIONS.map((s) => (
-                        <button key={s} type="button" onClick={() => setEditStatus(s)}
-                          className={`px-3 py-1.5 rounded-lg text-xs font-semibold border-2 transition-colors ${editStatus === s ? BTN_ACTIVE[s] : "border-gray-200 text-gray-400"}`}>
-                          {STATUS_LABEL[s]}
-                        </button>
-                      ))}
-                    </div>
-                    <div className="flex gap-2">
-                      <button type="button" onClick={() => handleSave(staff)}
-                        className="flex items-center gap-1 text-xs font-semibold text-white bg-[#2F855A] px-3 py-1.5 rounded-lg hover:bg-[#276749]">
-                        {isSaved ? <><Check className="w-3 h-3" /> Tersimpan</> : <><Save className="w-3 h-3" /> Simpan</>}
-                      </button>
-                      <button type="button" onClick={cancelEdit}
-                        className="flex items-center gap-1 text-xs font-medium text-gray-500 border border-gray-200 px-2.5 py-1.5 rounded-lg">
-                        <X className="w-3 h-3" /> Batal
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="flex items-center justify-between">
-                    <p className="text-xs text-gray-400">{entry ? `Terakhir Diubah — ${fmtDateTime(entry.last_modified)}` : "—"}</p>
-                    <button type="button" onClick={() => startEdit(staff.id, entry?.status ?? "hadir")}
-                      className="flex items-center gap-1 text-xs font-medium text-[#2F855A] hover:underline">
-                      <Pencil className="w-3 h-3" /> Edit
-                    </button>
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Rekap Bulan */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-        <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between gap-4 flex-wrap">
-          <div>
-            <h2 className="text-sm font-semibold text-gray-800">Rekap Bulan Ini</h2>
-            <p className="text-xs text-gray-400 mt-0.5">{rekapBulanData[0]?.totalHari ?? 0} hari kerja tercatat</p>
+            <h2 className="text-sm font-semibold text-gray-800">Rekap Kehadiran</h2>
           </div>
           <div className="flex gap-2">
-            <select value={rekapBulanIdx} onChange={(e) => setRekapBulanIdx(Number(e.target.value))} aria-label="Bulan rekap"
+            <select value={rekapBulanIdx} onChange={(e) => setRekapBulanIdx(Number(e.target.value))} aria-label="Bulan"
               className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#2F855A] bg-white">
               {BULAN_LABEL.map((b, i) => <option key={i} value={i}>{b}</option>)}
             </select>
-            <select value={rekapTahun} onChange={(e) => setRekapTahun(Number(e.target.value))} aria-label="Tahun rekap"
+            <select value={rekapTahun} onChange={(e) => setRekapTahun(Number(e.target.value))} aria-label="Tahun"
               className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#2F855A] bg-white">
               {TAHUN_OPTIONS.map((t) => <option key={t} value={t}>{t}</option>)}
             </select>
           </div>
         </div>
-        {rekapBulanData[0]?.totalHari === 0 ? (
-          <p className="px-5 py-8 text-center text-sm text-gray-400">Belum ada data absen untuk bulan ini.</p>
+
+        {rekapData.every((r) => r.total === 0) ? (
+          <p className="px-5 py-8 text-center text-sm text-gray-400">
+            Belum ada data absen terkonfirmasi untuk {BULAN_LABEL[rekapBulanIdx]} {rekapTahun}.
+          </p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
@@ -297,13 +205,12 @@ export default function AbsenPage() {
                 <tr className="bg-gray-50 border-b border-gray-100">
                   <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Nama</th>
                   <th className="text-center px-4 py-3 text-xs font-semibold text-green-600 uppercase tracking-wide">Hadir</th>
-                  <th className="text-center px-4 py-3 text-xs font-semibold text-amber-500 uppercase tracking-wide">Izin</th>
-                  <th className="text-center px-4 py-3 text-xs font-semibold text-red-400 uppercase tracking-wide">Absen</th>
+                  <th className="text-center px-4 py-3 text-xs font-semibold text-red-400 uppercase tracking-wide">Tidak Hadir</th>
                   <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Kehadiran</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
-                {rekapBulanData.map(({ staff, hadir, izin, absen, persen, totalHari }) => (
+                {rekapData.map(({ staff, hadir, tidakHadir, total, persen }) => (
                   <tr key={staff.id} className="hover:bg-gray-50 transition-colors">
                     <td className="px-5 py-3.5">
                       <p className="text-sm font-medium text-gray-900">{staff.nama}</p>
@@ -313,19 +220,16 @@ export default function AbsenPage() {
                       <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-green-100 text-green-700 text-xs font-bold">{hadir}</span>
                     </td>
                     <td className="px-4 py-3.5 text-center">
-                      <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-amber-50 text-amber-600 text-xs font-bold">{izin}</span>
-                    </td>
-                    <td className="px-4 py-3.5 text-center">
-                      <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-red-50 text-red-400 text-xs font-bold">{absen}</span>
+                      <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-red-50 text-red-400 text-xs font-bold">{tidakHadir}</span>
                     </td>
                     <td className="px-4 py-3.5">
                       <div className="flex items-center gap-2 justify-center">
                         <div className="w-20 h-2 bg-gray-100 rounded-full overflow-hidden">
                           <div className={`h-full rounded-full transition-all ${persen >= 80 ? "bg-green-500" : persen >= 60 ? "bg-amber-400" : "bg-red-400"}`}
-                            style={{ width: `${totalHari > 0 ? persen : 0}%` }} />
+                            style={{ width: `${total > 0 ? persen : 0}%` }} />
                         </div>
                         <span className={`text-xs font-semibold w-8 ${persen >= 80 ? "text-green-600" : persen >= 60 ? "text-amber-500" : "text-red-500"}`}>
-                          {totalHari > 0 ? `${persen}%` : "—"}
+                          {total > 0 ? `${persen}%` : "—"}
                         </span>
                       </div>
                     </td>
