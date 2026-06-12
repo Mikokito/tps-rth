@@ -49,7 +49,6 @@ export default function Footer() {
                 { href: "/berita", label: "Berita" },
                 { href: "/edukasi", label: "Edukasi" },
                 { href: "/kontak", label: "Kontak" },
-                { href: "/cara-daftar", label: "Cara Daftar" },
               ].map((link) => (
                 <li key={link.href}>
                   <Link

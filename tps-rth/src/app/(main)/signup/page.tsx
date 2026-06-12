@@ -87,46 +87,19 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="flex flex-col min-h-screen bg-[#FBFAF2]">
-      <div className="grid lg:grid-cols-2 flex-1">
-        <div className="relative hidden lg:flex flex-col overflow-hidden">
-          <img
-            src="/webp/danau.webp"
-            alt="Danau"
-            className="absolute inset-0 object-cover w-full h-full"
-          />
-          <div
-            className="absolute inset-0"
-            style={{
-              backgroundColor: "rgba(230, 218, 196, 0.87)",
-            }}
-          />
-          <div className="relative z-10 flex flex-col justify-between h-full p-10 xl:p-14">
-            <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-[#2F855A] inline-block" />
-              <span className="text-[10px] tracking-[0.25em] uppercase font-mono text-gray-700">
-                TPS RTH · ISSUE NO. 04
-              </span>
-            </div>
-            <div>
-              <p className="text-[10px] tracking-[0.2em] uppercase font-mono text-gray-500 mb-5">
-                [ HERO / LIFESTYLE ]
-              </p>
-              <h2 className="font-serif text-4xl xl:text-5xl font-bold leading-snug text-gray-900">
-                Bergabung dan jaga lingkungan.
-              </h2>
-              <p className="mt-3 text-sm text-gray-600 max-w-70">
-                Daftar gratis sebagai nasabah TPS RTH dan mulai berkontribusi untuk lingkungan yang lebih bersih.
-              </p>
-            </div>
-            <div className="mt-10 flex justify-between items-center text-[10px] tracking-[0.2em] uppercase font-mono text-gray-500 border-t border-gray-400/30 pt-3">
-              <span>[ HERO / LIFESTYLE ]</span>
-              <span>PLACEHOLDER · DROP IMAGE HERE</span>
-            </div>
-          </div>
-        </div>
-        <div className="flex-1 bg-[#FBFAF2] py-12 px-4">
-          <div className="max-w-lg mx-auto">
+    <div className="relative min-h-[calc(100vh-4rem)] flex items-center justify-center py-12 px-4">
+      {/* Full-page background */}
+      <img
+        src="/webp/RTH.jpg"
+        alt="TPS RTH"
+        className="absolute inset-0 object-cover w-full h-full"
+      />
+      {/* Dark overlay 70% */}
+      <div className="absolute inset-0 bg-black/70" />
+
+      {/* Centered content */}
+      <div className="relative z-10 w-full max-w-lg">
+        <div className="max-w-lg mx-auto">
             {/* Card */}
             <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
               {/* Green header */}
@@ -134,15 +107,13 @@ export default function SignupPage() {
                 <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-3">
                   <Leaf className="w-6 h-6" />
                 </div>
-                <h1 className="text-xl font-bold">Daftar Nasabah TPS RTH</h1>
-                <p className="text-green-200 text-sm mt-1">Bergabung dan mulai menabung sampah</p>
+                <h1 className="text-xl font-bold">Daftar Anggota TPS RTH</h1>
+                <p className="text-green-200 text-sm mt-1">Mari bergabung menjadi keanggotaan TPS</p>
               </div>
 
               {/* Form */}
               <div className="px-8 py-7">
-                <p className="text-xs text-gray-500 mb-5">
-                  Kolom bertanda <span className="text-red-500 font-semibold">*</span> wajib diisi.
-                </p>
+                
 
                 {errors.general && (
                   <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600">
@@ -283,6 +254,5 @@ export default function SignupPage() {
           </div>
         </div>
       </div>
-    </div>
   );
 }

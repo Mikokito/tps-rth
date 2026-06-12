@@ -2,14 +2,14 @@
 
 import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
-import { Calendar, FileText, Trash2, ChevronRight, Clock, AlertCircle } from "lucide-react";
+import { Calendar, FileText, Trash2, ChevronRight, Clock, AlertCircle, ClipboardList } from "lucide-react";
 import { getSession, type SessionUser } from "@/lib/mockAuth";
 import { createClient } from "@/utils/supabase/client";
 
 type AbsenRecord = {
   id: string;
   tanggal: string;
-  status: "hadir" | "tidak hadir" | "izin";
+  status: "hadir" | "izin" | "absen";
   last_modified: string;
 };
 
@@ -18,13 +18,21 @@ type IzinRecord = {
   status: "menunggu" | "disetujui" | "ditolak";
 };
 
+type JadwalRow = {
+  id: string;
+  tanggal: string;
+  jam_mulai: string;
+  jam_selesai: string;
+  deskripsi: string | null;
+};
+
 const STATUS_ABSEN_CLS: Record<AbsenRecord["status"], string> = {
-  hadir:         "bg-green-100 text-green-700",
-  izin:          "bg-amber-50 text-amber-600",
-  "tidak hadir": "bg-red-50 text-red-500",
+  hadir: "bg-green-100 text-green-700",
+  izin:  "bg-amber-50 text-amber-600",
+  absen: "bg-red-50 text-red-500",
 };
 const STATUS_ABSEN_LABEL: Record<AbsenRecord["status"], string> = {
-  hadir: "Hadir", izin: "Izin", "tidak hadir": "Tidak Hadir",
+  hadir: "Hadir", izin: "Izin", absen: "Tidak Hadir",
 };
 
 function fmtDateTime(iso: string) {
@@ -35,9 +43,14 @@ function fmtDateTime(iso: string) {
 
 export default function PetugasDashboardPage() {
   const today = new Date().toISOString().slice(0, 10);
-  const [session, setSession] = useState<SessionUser | null>(null);
+  const now = new Date();
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10);
+  const monthEnd   = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().slice(0, 10);
+
+  const [session, setSession]     = useState<SessionUser | null>(null);
   const [absenList, setAbsenList] = useState<AbsenRecord[]>([]);
   const [izinList, setIzinList]   = useState<IzinRecord[]>([]);
+  const [jadwalList, setJadwalList] = useState<JadwalRow[]>([]);
 
   useEffect(() => {
     async function init() {
@@ -50,7 +63,7 @@ export default function PetugasDashboardPage() {
         .from("staff_members").select("id").eq("nama", s.nama).maybeSingle();
 
       if (staffRow?.id) {
-        const [{ data: absenData }, { data: izinData }] = await Promise.all([
+        const [{ data: absenData }, { data: izinData }, { data: jadwalData }] = await Promise.all([
           supabase.from("absensi")
             .select("id, tanggal, status, last_modified")
             .eq("staff_id", staffRow.id)
@@ -58,12 +71,20 @@ export default function PetugasDashboardPage() {
           supabase.from("izin_cuti")
             .select("id, status")
             .eq("staff_id", staffRow.id),
+          supabase.from("jadwal_kerja")
+            .select("id, tanggal, jam_mulai, jam_selesai, deskripsi")
+            .eq("staff_id", staffRow.id)
+            .gte("tanggal", monthStart)
+            .lte("tanggal", monthEnd)
+            .order("tanggal", { ascending: true }),
         ]);
         if (absenData) setAbsenList(absenData);
-        if (izinData) setIzinList(izinData);
+        if (izinData)  setIzinList(izinData);
+        if (jadwalData) setJadwalList(jadwalData);
       }
     }
     init();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const todayAbsen = useMemo(() => absenList.find((a) => a.tanggal === today), [absenList, today]);
@@ -157,6 +178,43 @@ export default function PetugasDashboardPage() {
             </div>
             <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-emerald-400 transition-colors" />
           </Link>
+        </div>
+      </div>
+
+      {/* Agenda kerja bulanan */}
+      <div>
+        <div className="flex items-center gap-2 mb-3">
+          <ClipboardList className="w-4 h-4 text-[#2F855A]" />
+          <h2 className="text-sm font-semibold text-gray-700">
+            Agenda Kerja —{" "}
+            {now.toLocaleDateString("id-ID", { month: "long", year: "numeric" })}
+          </h2>
+        </div>
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 divide-y divide-gray-50">
+          {jadwalList.length === 0 ? (
+            <p className="text-sm text-gray-400 text-center py-6">Belum ada jadwal bulan ini</p>
+          ) : (
+            jadwalList.map((j) => (
+              <div key={j.id} className="flex items-start gap-4 px-5 py-4">
+                <div className="min-w-14 text-center">
+                  <p className="text-xs text-gray-400">
+                    {new Date(j.tanggal + "T00:00:00").toLocaleDateString("id-ID", { weekday: "short" })}
+                  </p>
+                  <p className="text-lg font-bold text-gray-800 leading-none">
+                    {new Date(j.tanggal + "T00:00:00").getDate()}
+                  </p>
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-gray-700">
+                    {j.jam_mulai.slice(0, 5)} – {j.jam_selesai.slice(0, 5)}
+                  </p>
+                  {j.deskripsi && (
+                    <p className="text-xs text-gray-400 mt-0.5">{j.deskripsi}</p>
+                  )}
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </div>
     </div>

@@ -52,7 +52,7 @@ export default async function HomePage() {
               </p>
               <div className="flex flex-wrap gap-3">
                 <Link
-                  href="/cara-daftar"
+                  href="/signup"
                   className="inline-flex items-center gap-2 bg-white text-[#2F855A] font-semibold px-4 sm:px-6 py-3 rounded-full hover:bg-green-50 transition-colors shadow-lg text-sm sm:text-base"
                 >
                   Daftar Sekarang <ArrowRight className="w-4 h-4" />
@@ -209,31 +209,6 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* CTA */}
-      <section className="px-4 py-16 bg-[#2F855A]">
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-white">
-          <div className="text-5xl mb-4">🌿</div>
-          <h2 className="text-3xl font-bold mb-4">Bergabunglah Bersama Kami</h2>
-          <p className="text-green-100 leading-relaxed mb-8 max-w-xl mx-auto">
-            Jadilah bagian dari gerakan pengelolaan sampah yang berkelanjutan. Daftarkan diri Anda
-            sebagai nasabah dan mulai berkontribusi untuk lingkungan yang lebih bersih.
-          </p>
-          <div className="flex flex-wrap justify-center gap-3">
-            <Link
-              href="/cara-daftar"
-              className="inline-flex items-center gap-2 bg-white text-[#2F855A] font-semibold px-7 py-3 rounded-full hover:bg-green-50 transition-colors shadow-lg"
-            >
-              Cara Mendaftar <ArrowRight className="w-4 h-4" />
-            </Link>
-            <Link
-              href="/kontak"
-              className="inline-flex items-center gap-2 bg-white/20 text-white font-semibold px-7 py-3 rounded-full hover:bg-white/30 transition-colors border border-white/30"
-            >
-              Hubungi Kami
-            </Link>
-          </div>
-        </div>
-      </section>
     </>
   );
 }

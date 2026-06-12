@@ -12,7 +12,6 @@ const navLinks = [
   { href: "/berita", label: "Berita" },
   { href: "/edukasi", label: "Edukasi" },
   { href: "/kontak", label: "Kontak" },
-  { href: "/cara-daftar", label: "Cara Daftar" },
 ];
 
 export default function Header() {

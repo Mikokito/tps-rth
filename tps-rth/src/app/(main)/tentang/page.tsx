@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { CheckCircle, ArrowRight, Users, Weight, Building2, Recycle } from "lucide-react";
+import { CheckCircle } from "lucide-react";
 import { tpsInfo } from "@/data/tps";
 
 export const metadata: Metadata = {
@@ -118,39 +118,49 @@ export default function TentangPage() {
               <div className="bg-[#FBFAF2] rounded-2xl p-6 border border-[#E6DFAF] space-y-0">
                 {[
                   { label: "Nama TPS", value: tpsInfo.name },
-                  { label: "Status", value: tpsInfo.status },
                   { label: "Berdiri Sejak", value: tpsInfo.established },
-                  { label: "Kapasitas", value: tpsInfo.capacity },
                   { label: "Alamat", value: tpsInfo.address },
-                  { label: "Kecamatan", value: tpsInfo.district },
-                  { label: "Kota", value: `${tpsInfo.city}, ${tpsInfo.province}` },
+                  { label: "Kabupaten/Provinsi", value: `${tpsInfo.city}, ${tpsInfo.province}` },
                 ].map((item, idx, arr) => (
                   <div
                     key={item.label}
                     className={`flex justify-between items-start py-3 gap-4 ${idx < arr.length - 1 ? "border-b border-[#E6DFAF]" : ""}`}
                   >
-                    <dt className="text-sm text-gray-500 flex-shrink-0 w-32">{item.label}</dt>
+                    <dt className="text-sm text-gray-500 flex-shrink-0 w-36">{item.label}</dt>
                     <dd className="text-sm font-medium text-gray-900 text-right">{item.value}</dd>
                   </div>
                 ))}
-                <div className="pt-3">
-                  <dt className="text-sm text-gray-500 mb-2">Jenis Sampah Diterima</dt>
-                  <dd className="flex flex-wrap gap-2">
-                    {tpsInfo.wasteTypes.map((w) => (
-                      <span key={w} className="text-xs bg-[#F0FFF4] text-[#2F855A] border border-green-200 rounded-full px-3 py-1 font-medium">
-                        {w}
-                      </span>
-                    ))}
-                  </dd>
-                </div>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* 3R Section */}
+      {/* Organization */}
       <section className="px-4 py-14 bg-[#FBFAF2]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-10">
+            <span className="text-sm font-semibold text-[#2F855A] uppercase tracking-wider">Pengurus</span>
+            <h2 className="text-3xl font-bold text-gray-900 mt-1">Struktur Organisasi</h2>
+          </div>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 max-w-4xl mx-auto">
+            {tpsInfo.organization.map((member) => (
+              <div key={member.role} className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm flex items-center gap-4">
+                <div className="w-11 h-11 bg-[#F0FFF4] rounded-full flex items-center justify-center flex-shrink-0">
+                  <span className="text-xl">👤</span>
+                </div>
+                <div>
+                  <div className="font-semibold text-gray-900 text-sm">{member.name}</div>
+                  <div className="text-xs text-[#2F855A] font-medium mt-0.5">{member.role}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* 3R Section */}
+      <section className="px-4 py-14 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-10">
             <span className="text-sm font-semibold text-[#2F855A] uppercase tracking-wider">Prinsip Kami</span>
@@ -174,7 +184,7 @@ export default function TentangPage() {
                   <ul className="space-y-2">
                     {r.tips.map((tip) => (
                       <li key={tip} className="flex items-start gap-2 text-sm text-gray-600">
-                        <CheckCircle className={`w-4 h-4 flex-shrink-0 mt-0.5 ${r.headColor}`} />
+                        <CheckCircle className={`w-4 h-4 shrink-0 mt-0.5 ${r.headColor}`} />
                         <span>{tip}</span>
                       </li>
                     ))}
@@ -183,43 +193,6 @@ export default function TentangPage() {
               </div>
             ))}
           </div>
-        </div>
-      </section>
-
-      {/* Organization */}
-      <section className="px-4 py-14 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-10">
-            <span className="text-sm font-semibold text-[#2F855A] uppercase tracking-wider">Pengurus</span>
-            <h2 className="text-3xl font-bold text-gray-900 mt-1">Struktur Organisasi</h2>
-          </div>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 max-w-4xl mx-auto">
-            {tpsInfo.organization.map((member) => (
-              <div key={member.role} className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm flex items-center gap-4">
-                <div className="w-11 h-11 bg-[#F0FFF4] rounded-full flex items-center justify-center flex-shrink-0">
-                  <span className="text-xl">👤</span>
-                </div>
-                <div>
-                  <div className="font-semibold text-gray-900 text-sm">{member.name}</div>
-                  <div className="text-xs text-[#2F855A] font-medium mt-0.5">{member.role}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* CTA */}
-      <section className="px-4 py-14 bg-[#2F855A]">
-        <div className="max-w-2xl mx-auto px-4 text-center text-white">
-          <h2 className="text-2xl font-bold mb-3">Tertarik Bergabung?</h2>
-          <p className="text-green-100 mb-6">Daftarkan diri Anda sebagai nasabah TPS RTH dan mulai berkontribusi untuk lingkungan yang lebih baik.</p>
-          <Link
-            href="/cara-daftar"
-            className="inline-flex items-center gap-2 bg-white text-[#2F855A] font-semibold px-7 py-3 rounded-full hover:bg-green-50 transition-colors shadow-lg"
-          >
-            Cara Mendaftar <ArrowRight className="w-4 h-4" />
-          </Link>
         </div>
       </section>
     </>

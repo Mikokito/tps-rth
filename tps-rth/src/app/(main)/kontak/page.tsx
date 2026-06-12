@@ -2,13 +2,9 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { MapPin, Phone, Mail, Clock, MessageSquare, Send, CheckCircle } from "lucide-react";
+import { MapPin, Phone, Mail, MessageSquare, Send, CheckCircle, Loader2 } from "lucide-react";
 import { tpsInfo } from "@/data/tps";
-
-const devTeam = [
-  { name: "Lieshia Metrulana", role: "Project Lead & Developer", email: "lieshia@example.com" },
-  { name: "Tim TPS RTH", role: "Pengelola TPS", email: tpsInfo.contact.email },
-];
+import { createClient } from "@/utils/supabase/client";
 
 const subjectOptions = ["Layanan", "Keluhan", "Kerjasama", "Pendaftaran", "Lainnya"];
 
@@ -21,15 +17,31 @@ function RequiredMark() {
 
 export default function KontakPage() {
   const [form, setForm] = useState({ nama: "", email: "", whatsapp: "", subjek: "", pesan: "" });
-  const [sent, setSent] = useState(false);
+  const [sent, setSent]       = useState(false);
+  const [sending, setSending] = useState(false);
+  const [error, setError]     = useState("");
 
-  function handleSubmit(e: React.SyntheticEvent<HTMLFormElement>) {
+  async function handleSubmit(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault();
-    const emailSubject = encodeURIComponent(`[${form.subjek}] Pesan dari ${form.nama} - TPS RTH Website`);
-    const body = encodeURIComponent(
-      `Nama: ${form.nama}\nEmail: ${form.email}${form.whatsapp ? `\nWhatsApp: ${form.whatsapp}` : ""}\nSubjek: ${form.subjek}\n\nPesan:\n${form.pesan}`
-    );
-    window.location.href = `mailto:${tpsInfo.contact.email}?subject=${emailSubject}&body=${body}`;
+    setError("");
+    setSending(true);
+
+    const supabase = createClient();
+    const { error: dbErr } = await supabase.from("pesan").insert({
+      nama:     form.nama,
+      email:    form.email,
+      whatsapp: form.whatsapp || null,
+      subjek:   form.subjek,
+      pesan:    form.pesan,
+    });
+
+    setSending(false);
+
+    if (dbErr) {
+      setError("Gagal mengirim pesan. Silakan coba lagi.");
+      return;
+    }
+
     setSent(true);
   }
 
@@ -112,26 +124,6 @@ export default function KontakPage() {
                 </div>
               </div>
 
-              {/* Hours */}
-              <div>
-                <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-                  <Clock className="w-5 h-5 text-[#2F855A]" /> Jam Operasional
-                </h3>
-                <div className="bg-[#FBFAF2] shadow-sm rounded-2xl overflow-hidden">
-                  {tpsInfo.operationalHours.map((h, idx) => (
-                    <div
-                      key={h.day}
-                      className={`flex justify-between px-5 py-3 text-sm ${
-                        idx < tpsInfo.operationalHours.length - 1 ? "border-b border-[#E6DFAF]" : ""
-                      } ${h.hours === "Tutup" ? "text-red-500" : "text-gray-700"}`}
-                    >
-                      <span className="font-medium">{h.day}</span>
-                      <span>{h.hours}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
               {/* Location map placeholder */}
               <div>
                 <h3 className="text-lg font-bold text-gray-900 mb-4">Lokasi</h3>
@@ -157,16 +149,17 @@ export default function KontakPage() {
                 Kolom bertanda <span className="text-red-500 font-semibold">*</span> wajib diisi.
               </p>
 
-              <div className="bg-[#FBFAF2] shadow-sm rounded-2xl p-6 border border-[#E6DFAF] space-y-0">
+              <div className="bg-[#FBFAF2] shadow-sm rounded-2xl p-6 border border-[#E6DFAF]">
                 {sent ? (
                   <div className="bg-[#F0FFF4] border border-green-200 rounded-2xl p-8 text-center">
                     <CheckCircle className="w-12 h-12 text-[#2F855A] mx-auto mb-3" />
                     <h3 className="font-bold text-gray-900 text-lg mb-2">Pesan Terkirim!</h3>
                     <p className="text-gray-600 text-sm">
-                      Klien email Anda dibuka. Kami akan segera merespons pesan Anda.
+                      Terima kasih, pesan Anda telah kami terima. Kami akan segera merespons.
                     </p>
                     <button
-                      onClick={() => setSent(false)}
+                      type="button"
+                      onClick={() => { setSent(false); setForm({ nama: "", email: "", whatsapp: "", subjek: "", pesan: "" }); }}
                       className="mt-4 text-sm text-[#2F855A] font-semibold hover:underline"
                     >
                       Kirim pesan lain
@@ -174,7 +167,12 @@ export default function KontakPage() {
                   </div>
                 ) : (
                   <form onSubmit={handleSubmit} className="space-y-5">
-                    {/* Nama */}
+                    {error && (
+                      <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
+                        {error}
+                      </div>
+                    )}
+
                     <div>
                       <label htmlFor="nama" className="block text-sm font-semibold text-gray-700 mb-1.5">
                         Nama Lengkap <RequiredMark />
@@ -190,7 +188,6 @@ export default function KontakPage() {
                       />
                     </div>
 
-                    {/* Email */}
                     <div>
                       <label htmlFor="email" className="block text-sm font-semibold text-gray-700 mb-1.5">
                         Alamat Email <RequiredMark />
@@ -206,7 +203,6 @@ export default function KontakPage() {
                       />
                     </div>
 
-                    {/* WhatsApp (optional) */}
                     <div>
                       <label htmlFor="whatsapp" className="block text-sm font-semibold text-gray-700 mb-1.5">
                         Nomor WhatsApp
@@ -227,7 +223,6 @@ export default function KontakPage() {
                       </div>
                     </div>
 
-                    {/* Subjek */}
                     <div>
                       <label htmlFor="subjek" className="block text-sm font-semibold text-gray-700 mb-1.5">
                         Subjek <RequiredMark />
@@ -246,7 +241,6 @@ export default function KontakPage() {
                       </select>
                     </div>
 
-                    {/* Pesan */}
                     <div>
                       <label htmlFor="pesan" className="block text-sm font-semibold text-gray-700 mb-1.5">
                         Pesan <RequiredMark />
@@ -264,30 +258,17 @@ export default function KontakPage() {
 
                     <button
                       type="submit"
-                      className="w-full flex items-center justify-center gap-2 bg-[#2F855A] text-white font-semibold py-3 rounded-xl hover:bg-[#276749] transition-colors shadow-sm"
+                      disabled={sending}
+                      className="w-full flex items-center justify-center gap-2 bg-[#2F855A] text-white font-semibold py-3 rounded-xl hover:bg-[#276749] transition-colors shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
                     >
-                      <Send className="w-4 h-4" /> Kirim Pesan
+                      {sending ? (
+                        <><Loader2 className="w-4 h-4 animate-spin" /> Mengirim...</>
+                      ) : (
+                        <><Send className="w-4 h-4" /> Kirim Pesan</>
+                      )}
                     </button>
                   </form>
                 )}
-              </div>
-
-              {/* Dev team */}
-              <div className="mt-8 pt-8 border-t border-gray-100">
-                <h3 className="text-sm font-bold text-gray-700 uppercase tracking-wider mb-4">Tim Pengembang</h3>
-                <div className="space-y-3">
-                  {devTeam.map((m) => (
-                    <div key={m.name} className="flex items-center gap-3 bg-gray-50 rounded-xl p-3">
-                      <div className="w-9 h-9 bg-[#F0FFF4] rounded-full flex items-center justify-center text-lg shrink-0">
-                        👤
-                      </div>
-                      <div>
-                        <div className="font-semibold text-gray-900 text-sm">{m.name}</div>
-                        <div className="text-xs text-gray-500">{m.role}</div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
               </div>
             </div>
           </div>

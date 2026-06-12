@@ -2,23 +2,32 @@
 
 import { useState, useMemo, useEffect } from "react";
 import { CalendarDays, ChevronLeft, ChevronRight, Plus, Pencil, Trash2, X, Check, Clock } from "lucide-react";
-import {
-  staffMembers,
-  seedJadwalHarian,
-  JADWAL_HARIAN_KEY,
-  type JadwalHarian,
-  type JadwalPetugasItem,
-} from "@/data/adminData";
+import { createClient } from "@/utils/supabase/client";
+import { getSession } from "@/lib/mockAuth";
 
-// ─── Helpers ────────────────────────────────────────────────────────────────
+// ─── Types ───────────────────────────────────────────────────────────────────
 
-function toLocalStr(date: Date): string {
+type StaffMember = { id: string; nama: string; jabatan: string };
+
+type JadwalRow = {
+  id: string;
+  tanggal: string;
+  staff_id: string;
+  jam_mulai: string;
+  jam_selesai: string;
+  deskripsi: string | null;
+  catatan_hari: string | null;
+  staff_members: { nama: string; jabatan: string } | null;
+};
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+function toLocalStr(date: Date) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 }
 
-function getCalendarDays(year: number, month: number): { date: Date; isCurrentMonth: boolean }[] {
-  const firstOfMonth = new Date(year, month, 1);
-  const startDow = firstOfMonth.getDay(); // 0=Sun
+function getCalendarDays(year: number, month: number) {
+  const startDow = new Date(year, month, 1).getDay();
   const start = new Date(year, month, 1 - startDow);
   return Array.from({ length: 42 }, (_, i) => {
     const date = new Date(start);
@@ -27,138 +36,153 @@ function getCalendarDays(year: number, month: number): { date: Date; isCurrentMo
   });
 }
 
-function fmtFullDate(dateStr: string) {
-  return new Date(dateStr + "T00:00:00").toLocaleDateString("id-ID", {
+function fmtFullDate(ds: string) {
+  return new Date(ds + "T00:00:00").toLocaleDateString("id-ID", {
     weekday: "long", day: "numeric", month: "long", year: "numeric",
   });
 }
 
 const BULAN = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
-const HARI_HEADER = ["Min","Sen","Sel","Rab","Kam","Jum","Sab"];
+const HARI  = ["Min","Sen","Sel","Rab","Kam","Jum","Sab"];
 
-type JadwalMap = Record<string, JadwalHarian>;
-
-// ─── Page ────────────────────────────────────────────────────────────────────
+// ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function ManagerJadwalPage() {
-  const now = new Date();
+  const now   = new Date();
   const today = toLocalStr(now);
 
-  const [viewMonth, setViewMonth] = useState(now.getMonth());
-  const [viewYear, setViewYear]   = useState(now.getFullYear());
-  const [selectedDate, setSelectedDate] = useState<string>(today);
-  const [jadwalMap, setJadwalMap] = useState<JadwalMap>({});
+  const [viewMonth, setViewMonth]         = useState(now.getMonth());
+  const [viewYear, setViewYear]           = useState(now.getFullYear());
+  const [selectedDate, setSelectedDate]   = useState(today);
+  const [staffList, setStaffList]         = useState<StaffMember[]>([]);
+  const [jadwalList, setJadwalList]       = useState<JadwalRow[]>([]);
+  const [managerId, setManagerId]         = useState<string | null>(null);
+  const [ready, setReady]                 = useState(false);
 
-  // Modal: add staff
-  const [showAdd, setShowAdd] = useState(false);
-  const [addForm, setAddForm] = useState({ staffId: "", jamMulai: "08:00", jamSelesai: "16:00", deskripsi: "" });
+  // Add modal
+  const [showAdd, setShowAdd]     = useState(false);
+  const [addForm, setAddForm]     = useState({ staffId: "", jamMulai: "08:00", jamSelesai: "16:00", deskripsi: "" });
+  const [addSaving, setAddSaving] = useState(false);
 
-  // Modal: edit staff
-  const [editStaff, setEditStaff] = useState<JadwalPetugasItem | null>(null);
+  // Edit modal
+  const [editRow, setEditRow]     = useState<JadwalRow | null>(null);
+  const [editSaving, setEditSaving] = useState(false);
 
-  // Inline: task description
-  const [editingDesc, setEditingDesc] = useState(false);
-  const [descDraft, setDescDraft]     = useState("");
+  // Catatan hari
+  const [editingCatatan, setEditingCatatan] = useState(false);
+  const [catatanDraft, setCatatanDraft]     = useState("");
+  const [catatanSaving, setCatatanSaving]   = useState(false);
 
   // Delete confirm
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
   // ── Load ──
   useEffect(() => {
-    const raw = localStorage.getItem(JADWAL_HARIAN_KEY);
-    const arr: JadwalHarian[] = raw ? JSON.parse(raw) : seedJadwalHarian;
-    setJadwalMap(Object.fromEntries(arr.map((j) => [j.tanggal, j])));
+    async function load() {
+      const session = await getSession();
+      if (session) setManagerId(session.id);
+
+      const supabase = createClient();
+      const [{ data: staffData }, { data: jadwalData }] = await Promise.all([
+        supabase.from("staff_members").select("id, nama, jabatan").eq("aktif", true).order("nama"),
+        supabase.from("jadwal_kerja")
+          .select("id, tanggal, staff_id, jam_mulai, jam_selesai, deskripsi, catatan_hari, staff_members(nama, jabatan)")
+          .order("tanggal").order("jam_mulai"),
+      ]);
+      if (staffData) setStaffList(staffData);
+      if (jadwalData) setJadwalList(jadwalData as JadwalRow[]);
+      setReady(true);
+    }
+    load();
   }, []);
 
-  function saveMap(map: JadwalMap) {
-    setJadwalMap(map);
-    localStorage.setItem(JADWAL_HARIAN_KEY, JSON.stringify(Object.values(map)));
-  }
-
-  // ── Calendar ──
+  // ── Derived ──
   const calendarDays = useMemo(() => getCalendarDays(viewYear, viewMonth), [viewYear, viewMonth]);
 
+  const jadwalByDate = useMemo(() => {
+    const map: Record<string, JadwalRow[]> = {};
+    jadwalList.forEach((j) => {
+      if (!map[j.tanggal]) map[j.tanggal] = [];
+      map[j.tanggal].push(j);
+    });
+    return map;
+  }, [jadwalList]);
+
+  const selectedJadwal  = jadwalByDate[selectedDate] ?? [];
+  const catatanHariIni  = selectedJadwal[0]?.catatan_hari ?? "";
+  const assignedIds     = new Set(selectedJadwal.map((j) => j.staff_id));
+  const availableStaff  = staffList.filter((s) => !assignedIds.has(s.id));
+
   function prevMonth() {
-    if (viewMonth === 0) { setViewMonth(11); setViewYear((y) => y - 1); }
-    else setViewMonth((m) => m - 1);
+    if (viewMonth === 0) { setViewMonth(11); setViewYear((y) => y - 1); } else setViewMonth((m) => m - 1);
   }
   function nextMonth() {
-    if (viewMonth === 11) { setViewMonth(0); setViewYear((y) => y + 1); }
-    else setViewMonth((m) => m + 1);
-  }
-  function goCurrentMonth() {
-    setViewMonth(now.getMonth()); setViewYear(now.getFullYear());
+    if (viewMonth === 11) { setViewMonth(0); setViewYear((y) => y + 1); } else setViewMonth((m) => m + 1);
   }
 
-  // ── Selected data ──
-  const selectedData = jadwalMap[selectedDate];
-
-  const availableStaff = staffMembers.filter(
-    (s) => !selectedData?.petugas.some((p) => p.staffId === s.id)
-  );
-
-  // ── Task description ──
-  function startEditDesc() {
-    setDescDraft(selectedData?.deskripsiTugas ?? "");
-    setEditingDesc(true);
-  }
-  function saveDesc() {
-    const existing = jadwalMap[selectedDate];
-    const updated: JadwalHarian = existing
-      ? { ...existing, deskripsiTugas: descDraft }
-      : { tanggal: selectedDate, deskripsiTugas: descDraft, petugas: [] };
-    saveMap({ ...jadwalMap, [selectedDate]: updated });
-    setEditingDesc(false);
-  }
-
-  // ── Add staff ──
-  function openAdd() {
-    setAddForm({ staffId: availableStaff[0]?.id ?? "", jamMulai: "08:00", jamSelesai: "16:00", deskripsi: "" });
-    setShowAdd(true);
-  }
-  function handleAdd() {
-    const staff = staffMembers.find((s) => s.id === addForm.staffId);
-    if (!staff) return;
-    const newItem: JadwalPetugasItem = {
-      id: `jhi-${Date.now()}`,
-      staffId: staff.id, namaPetugas: staff.nama, jabatan: staff.jabatan,
-      jamMulai: addForm.jamMulai, jamSelesai: addForm.jamSelesai, deskripsi: addForm.deskripsi,
-    };
-    const existing = jadwalMap[selectedDate];
-    const updated: JadwalHarian = existing
-      ? { ...existing, petugas: [...existing.petugas, newItem] }
-      : { tanggal: selectedDate, deskripsiTugas: "", petugas: [newItem] };
-    saveMap({ ...jadwalMap, [selectedDate]: updated });
-    setShowAdd(false);
-  }
-
-  // ── Remove staff ──
-  function handleRemove(itemId: string) {
-    const existing = jadwalMap[selectedDate];
-    if (!existing) return;
-    const petugas = existing.petugas.filter((p) => p.id !== itemId);
-    const newMap = { ...jadwalMap };
-    if (petugas.length === 0 && !existing.deskripsiTugas) {
-      delete newMap[selectedDate];
-    } else {
-      newMap[selectedDate] = { ...existing, petugas };
+  // ── Catatan hari ──
+  async function saveCatatan() {
+    setCatatanSaving(true);
+    const supabase = createClient();
+    if (selectedJadwal.length === 0) {
+      setCatatanSaving(false);
+      setEditingCatatan(false);
+      return;
     }
-    saveMap(newMap);
+    await Promise.all(
+      selectedJadwal.map((j) => supabase.from("jadwal_kerja").update({ catatan_hari: catatanDraft }).eq("id", j.id))
+    );
+    setJadwalList((prev) => prev.map((j) => j.tanggal === selectedDate ? { ...j, catatan_hari: catatanDraft } : j));
+    setCatatanSaving(false);
+    setEditingCatatan(false);
+  }
+
+  // ── Add jadwal ──
+  async function handleAdd() {
+    if (!addForm.staffId) return;
+    setAddSaving(true);
+    const supabase = createClient();
+    const { data, error } = await supabase.from("jadwal_kerja").insert({
+      tanggal:     selectedDate,
+      staff_id:    addForm.staffId,
+      jam_mulai:   addForm.jamMulai,
+      jam_selesai: addForm.jamSelesai,
+      deskripsi:   addForm.deskripsi || null,
+      catatan_hari: catatanHariIni || null,
+      dibuat_oleh: managerId,
+    }).select("id, tanggal, staff_id, jam_mulai, jam_selesai, deskripsi, catatan_hari, staff_members(nama, jabatan)").single();
+
+    if (!error && data) setJadwalList((prev) => [...prev, data as JadwalRow]);
+    setShowAdd(false);
+    setAddForm({ staffId: "", jamMulai: "08:00", jamSelesai: "16:00", deskripsi: "" });
+    setAddSaving(false);
+  }
+
+  // ── Edit jadwal ──
+  async function handleSaveEdit() {
+    if (!editRow) return;
+    setEditSaving(true);
+    const supabase = createClient();
+    await supabase.from("jadwal_kerja").update({
+      jam_mulai:   editRow.jam_mulai,
+      jam_selesai: editRow.jam_selesai,
+      deskripsi:   editRow.deskripsi || null,
+    }).eq("id", editRow.id);
+    setJadwalList((prev) => prev.map((j) => j.id === editRow.id ? { ...j, ...editRow } : j));
+    setEditRow(null);
+    setEditSaving(false);
+  }
+
+  // ── Delete jadwal ──
+  async function handleDelete(id: string) {
+    const supabase = createClient();
+    await supabase.from("jadwal_kerja").delete().eq("id", id);
+    setJadwalList((prev) => prev.filter((j) => j.id !== id));
     setDeleteId(null);
   }
 
-  // ── Edit staff ──
-  function handleSaveEdit() {
-    if (!editStaff || !jadwalMap[selectedDate]) return;
-    const existing = jadwalMap[selectedDate];
-    saveMap({
-      ...jadwalMap,
-      [selectedDate]: { ...existing, petugas: existing.petugas.map((p) => p.id === editStaff.id ? editStaff : p) },
-    });
-    setEditStaff(null);
-  }
+  if (!ready) return <div className="flex h-40 items-center justify-center text-gray-400 text-sm">Memuat data...</div>;
 
-  // ─── Render ───────────────────────────────────────────────────────────────
   return (
     <div className="space-y-4">
       <div>
@@ -168,44 +192,39 @@ export default function ManagerJadwalPage() {
 
       <div className="grid lg:grid-cols-[340px_1fr] gap-4 items-start">
 
-        {/* ── LEFT: Calendar ── */}
+        {/* ── Kalender ── */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
-          {/* Month nav */}
           <div className="flex items-center justify-between mb-3">
-            <button onClick={prevMonth} className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors">
+            <button type="button" onClick={prevMonth} title="Bulan sebelumnya" className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors">
               <ChevronLeft className="w-4 h-4 text-gray-600" />
             </button>
             <div className="text-center">
               <p className="text-sm font-bold text-gray-900">{BULAN[viewMonth]} {viewYear}</p>
               {(viewMonth !== now.getMonth() || viewYear !== now.getFullYear()) && (
-                <button onClick={goCurrentMonth} className="text-[10px] text-[#2F855A] hover:underline">
-                  Bulan ini
-                </button>
+                <button type="button" onClick={() => { setViewMonth(now.getMonth()); setViewYear(now.getFullYear()); }}
+                  className="text-[10px] text-[#2F855A] hover:underline">Bulan ini</button>
               )}
             </div>
-            <button onClick={nextMonth} className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors">
+            <button type="button" onClick={nextMonth} title="Bulan berikutnya" className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors">
               <ChevronRight className="w-4 h-4 text-gray-600" />
             </button>
           </div>
 
-          {/* Day-of-week headers */}
           <div className="grid grid-cols-7 mb-1">
-            {HARI_HEADER.map((d) => (
-              <div key={d} className="text-center text-[11px] font-semibold text-gray-400 py-1">{d}</div>
-            ))}
+            {HARI.map((d) => <div key={d} className="text-center text-[11px] font-semibold text-gray-400 py-1">{d}</div>)}
           </div>
 
-          {/* Day cells */}
           <div className="grid grid-cols-7 gap-0.5">
             {calendarDays.map(({ date, isCurrentMonth }) => {
-              const ds = toLocalStr(date);
+              const ds         = toLocalStr(date);
               const isToday    = ds === today;
               const isSelected = ds === selectedDate;
-              const hasSchedule = !!jadwalMap[ds] && isCurrentMonth;
+              const hasJadwal  = !!jadwalByDate[ds] && isCurrentMonth;
               return (
                 <button
                   key={ds}
-                  onClick={() => { setSelectedDate(ds); setEditingDesc(false); setDeleteId(null); }}
+                  type="button"
+                  onClick={() => { if (isCurrentMonth) { setSelectedDate(ds); setEditingCatatan(false); setDeleteId(null); } }}
                   className={`aspect-square flex flex-col items-center justify-center rounded-lg text-xs font-medium transition-colors
                     ${!isCurrentMonth ? "text-gray-300 cursor-default" : "cursor-pointer"}
                     ${isSelected ? "bg-[#2F855A] text-white" : ""}
@@ -214,19 +233,14 @@ export default function ManagerJadwalPage() {
                   `}
                 >
                   {date.getDate()}
-                  {hasSchedule && (
-                    <span className={`w-1 h-1 rounded-full mt-0.5 ${isSelected ? "bg-white/70" : "bg-[#2F855A]"}`} />
-                  )}
+                  {hasJadwal && <span className={`w-1 h-1 rounded-full mt-0.5 ${isSelected ? "bg-white/70" : "bg-[#2F855A]"}`} />}
                 </button>
               );
             })}
           </div>
 
-          {/* Legend */}
           <div className="mt-3 pt-3 border-t border-gray-100 flex flex-wrap gap-3 text-[11px] text-gray-400">
-            <span className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-[#2F855A] inline-block" /> Ada jadwal
-            </span>
+            <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-[#2F855A] inline-block" /> Ada jadwal</span>
             <span className="flex items-center gap-1.5">
               <span className="w-4 h-4 rounded-lg ring-2 ring-[#2F855A] inline-flex items-center justify-center text-[9px] text-[#2F855A] font-bold">{now.getDate()}</span>
               Hari ini
@@ -234,38 +248,41 @@ export default function ManagerJadwalPage() {
           </div>
         </div>
 
-        {/* ── RIGHT: Detail ── */}
+        {/* ── Detail tanggal ── */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden min-h-[320px]">
-
           {/* Header */}
           <div className="px-5 py-4 border-b border-gray-100">
             <div className="flex items-start justify-between gap-3">
-              <div>
+              <div className="flex-1 min-w-0">
                 <h2 className="text-base font-bold text-gray-900 capitalize">{fmtFullDate(selectedDate)}</h2>
-
-                {/* Task description */}
+                {/* Catatan hari */}
                 <div className="mt-2">
-                  {editingDesc ? (
+                  {editingCatatan ? (
                     <div className="flex items-center gap-2 flex-wrap">
-                      <input
-                        autoFocus
-                        value={descDraft}
-                        onChange={(e) => setDescDraft(e.target.value)}
-                        onKeyDown={(e) => { if (e.key === "Enter") saveDesc(); if (e.key === "Escape") setEditingDesc(false); }}
-                        placeholder="Deskripsi tugas hari ini..."
+                      <input autoFocus value={catatanDraft}
+                        onChange={(e) => setCatatanDraft(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === "Enter") saveCatatan(); if (e.key === "Escape") setEditingCatatan(false); }}
+                        placeholder="Catatan tugas hari ini..."
                         className="flex-1 min-w-0 border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#2F855A]"
                       />
-                      <button onClick={saveDesc} className="px-3 py-1.5 bg-[#2F855A] text-white text-xs font-semibold rounded-lg hover:bg-[#276749]">Simpan</button>
-                      <button onClick={() => setEditingDesc(false)} className="px-3 py-1.5 border border-gray-200 text-gray-500 text-xs rounded-lg hover:bg-gray-50">Batal</button>
+                      <button type="button" onClick={saveCatatan} disabled={catatanSaving}
+                        className="px-3 py-1.5 bg-[#2F855A] text-white text-xs font-semibold rounded-lg hover:bg-[#276749] disabled:opacity-60">
+                        {catatanSaving ? "..." : "Simpan"}
+                      </button>
+                      <button type="button" onClick={() => setEditingCatatan(false)}
+                        className="px-3 py-1.5 border border-gray-200 text-gray-500 text-xs rounded-lg hover:bg-gray-50">Batal</button>
                     </div>
                   ) : (
                     <div className="flex items-center gap-1.5 group">
-                      <p className={`text-sm ${selectedData?.deskripsiTugas ? "text-gray-600" : "text-gray-300 italic"}`}>
-                        {selectedData?.deskripsiTugas || "Belum ada deskripsi tugas — klik ✎ untuk mengisi"}
+                      <p className={`text-sm ${catatanHariIni ? "text-gray-600" : "text-gray-300 italic"}`}>
+                        {catatanHariIni || "Belum ada catatan — klik ✎ untuk menambah"}
                       </p>
-                      <button onClick={startEditDesc} className="opacity-0 group-hover:opacity-100 transition-opacity p-1 text-gray-400 hover:text-[#2F855A] rounded">
-                        <Pencil className="w-3.5 h-3.5" />
-                      </button>
+                      {selectedJadwal.length > 0 && (
+                        <button type="button" onClick={() => { setCatatanDraft(catatanHariIni); setEditingCatatan(true); }}
+                          className="opacity-0 group-hover:opacity-100 transition-opacity p-1 text-gray-400 hover:text-[#2F855A] rounded" title="Edit catatan">
+                          <Pencil className="w-3.5 h-3.5" />
+                        </button>
+                      )}
                     </div>
                   )}
                 </div>
@@ -274,76 +291,62 @@ export default function ManagerJadwalPage() {
             </div>
           </div>
 
-          {/* Staff section header */}
+          {/* Staff header */}
           <div className="px-5 py-2.5 flex items-center justify-between bg-gray-50/60 border-b border-gray-100">
             <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
               Petugas Bertugas
-              {selectedData && selectedData.petugas.length > 0 && (
+              {selectedJadwal.length > 0 && (
                 <span className="ml-1.5 bg-[#2F855A] text-white rounded-full px-1.5 py-0.5 text-[10px] font-bold normal-case tracking-normal">
-                  {selectedData.petugas.length}
+                  {selectedJadwal.length}
                 </span>
               )}
             </p>
-            <button
-              onClick={openAdd}
+            <button type="button" onClick={() => { setAddForm({ staffId: availableStaff[0]?.id ?? "", jamMulai: "08:00", jamSelesai: "16:00", deskripsi: "" }); setShowAdd(true); }}
               disabled={availableStaff.length === 0}
-              className="flex items-center gap-1 text-xs font-semibold text-[#2F855A] hover:underline disabled:opacity-40 disabled:no-underline disabled:cursor-not-allowed"
-            >
+              className="flex items-center gap-1 text-xs font-semibold text-[#2F855A] hover:underline disabled:opacity-40 disabled:no-underline disabled:cursor-not-allowed">
               <Plus className="w-3.5 h-3.5" /> Tambah Petugas
             </button>
           </div>
 
           {/* Staff list */}
-          {!selectedData || selectedData.petugas.length === 0 ? (
+          {selectedJadwal.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-14 text-gray-400 gap-2">
               <CalendarDays className="w-8 h-8 opacity-25" />
-              <p className="text-sm">Belum ada petugas yang ditugaskan</p>
+              <p className="text-sm">Belum ada petugas yang dijadwalkan</p>
               {availableStaff.length > 0 && (
-                <button onClick={openAdd} className="text-xs text-[#2F855A] hover:underline font-semibold">+ Tambah Petugas</button>
+                <button type="button" onClick={() => { setAddForm({ staffId: availableStaff[0]?.id ?? "", jamMulai: "08:00", jamSelesai: "16:00", deskripsi: "" }); setShowAdd(true); }}
+                  className="text-xs text-[#2F855A] hover:underline font-semibold">+ Tambah Petugas</button>
               )}
             </div>
           ) : (
             <div className="divide-y divide-gray-50">
-              {selectedData.petugas.map((p) => (
-                <div key={p.id} className="px-5 py-3.5 flex items-start gap-3 group hover:bg-gray-50/50 transition-colors">
-                  {/* Avatar */}
+              {selectedJadwal.map((j) => (
+                <div key={j.id} className="px-5 py-3.5 flex items-start gap-3 group hover:bg-gray-50/50 transition-colors">
                   <div className="w-8 h-8 rounded-full bg-[#2F855A]/10 flex items-center justify-center text-[#2F855A] text-xs font-bold shrink-0 mt-0.5">
-                    {p.namaPetugas[0]}
+                    {j.staff_members?.nama?.[0] ?? "?"}
                   </div>
-
-                  {/* Info */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <p className="text-sm font-semibold text-gray-900">{p.namaPetugas}</p>
-                      <span className="text-xs text-gray-400">{p.jabatan}</span>
+                      <p className="text-sm font-semibold text-gray-900">{j.staff_members?.nama ?? "—"}</p>
+                      <span className="text-xs text-gray-400">{j.staff_members?.jabatan ?? "—"}</span>
                     </div>
                     <div className="flex items-center gap-1.5 mt-0.5 text-xs text-gray-500 flex-wrap">
                       <Clock className="w-3 h-3 shrink-0" />
-                      <span className="font-medium">{p.jamMulai} – {p.jamSelesai}</span>
-                      {p.deskripsi && (
-                        <>
-                          <span className="text-gray-300">·</span>
-                          <span className="text-gray-400 truncate max-w-[200px]">{p.deskripsi}</span>
-                        </>
-                      )}
+                      <span className="font-medium">{j.jam_mulai.slice(0,5)} – {j.jam_selesai.slice(0,5)}</span>
+                      {j.deskripsi && <><span className="text-gray-300">·</span><span className="text-gray-400 truncate max-w-48">{j.deskripsi}</span></>}
                     </div>
                   </div>
-
-                  {/* Actions */}
                   <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button
-                      onClick={() => setEditStaff({ ...p })}
-                      className="p-1.5 text-gray-400 hover:text-[#2F855A] hover:bg-green-50 rounded-lg transition-colors"
-                    >
+                    <button type="button" onClick={() => setEditRow({ ...j })} title="Edit" className="p-1.5 text-gray-400 hover:text-[#2F855A] hover:bg-green-50 rounded-lg transition-colors">
                       <Pencil className="w-3.5 h-3.5" />
                     </button>
-                    {deleteId === p.id ? (
+                    {deleteId === j.id ? (
                       <>
-                        <button onClick={() => handleRemove(p.id)} className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg"><Check className="w-3.5 h-3.5" /></button>
-                        <button onClick={() => setDeleteId(null)} className="p-1.5 text-gray-400 hover:bg-gray-100 rounded-lg"><X className="w-3.5 h-3.5" /></button>
+                        <button type="button" title="Konfirmasi hapus" onClick={() => handleDelete(j.id)} className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg"><Check className="w-3.5 h-3.5" /></button>
+                        <button type="button" title="Batal" onClick={() => setDeleteId(null)} className="p-1.5 text-gray-400 hover:bg-gray-100 rounded-lg"><X className="w-3.5 h-3.5" /></button>
                       </>
                     ) : (
-                      <button onClick={() => setDeleteId(p.id)} className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors">
+                      <button type="button" title="Hapus" onClick={() => setDeleteId(j.id)} className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors">
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     )}
@@ -355,58 +358,45 @@ export default function ManagerJadwalPage() {
         </div>
       </div>
 
-      {/* ── Modal: Add Staff ── */}
+      {/* ── Modal: Tambah Petugas ── */}
       {showAdd && (
         <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={() => setShowAdd(false)}>
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
               <h2 className="font-semibold text-gray-900">Tambah Petugas</h2>
-              <button onClick={() => setShowAdd(false)} className="text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>
+              <button type="button" onClick={() => setShowAdd(false)} title="Tutup"><X className="w-5 h-5 text-gray-400" /></button>
             </div>
             <div className="p-5 space-y-4">
               <div>
                 <label className="block text-xs font-semibold text-gray-700 mb-1">Petugas *</label>
-                <select
-                  value={addForm.staffId}
-                  onChange={(e) => setAddForm((f) => ({ ...f, staffId: e.target.value }))}
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#2F855A]"
-                >
-                  {availableStaff.map((s) => (
-                    <option key={s.id} value={s.id}>{s.nama} — {s.jabatan}</option>
-                  ))}
+                <select value={addForm.staffId} onChange={(e) => setAddForm((f) => ({ ...f, staffId: e.target.value }))}
+                  aria-label="Pilih petugas"
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#2F855A] bg-white">
+                  {availableStaff.map((s) => <option key={s.id} value={s.id}>{s.nama} — {s.jabatan}</option>)}
                 </select>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-semibold text-gray-700 mb-1">Jam Mulai *</label>
-                  <input type="time" value={addForm.jamMulai}
-                    onChange={(e) => setAddForm((f) => ({ ...f, jamMulai: e.target.value }))}
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#2F855A]" />
+                  <input type="time" value={addForm.jamMulai} onChange={(e) => setAddForm((f) => ({ ...f, jamMulai: e.target.value }))}
+                    title="Jam mulai" className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#2F855A]" />
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-gray-700 mb-1">Jam Selesai *</label>
-                  <input type="time" value={addForm.jamSelesai}
-                    onChange={(e) => setAddForm((f) => ({ ...f, jamSelesai: e.target.value }))}
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#2F855A]" />
+                  <input type="time" value={addForm.jamSelesai} onChange={(e) => setAddForm((f) => ({ ...f, jamSelesai: e.target.value }))}
+                    title="Jam selesai" className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#2F855A]" />
                 </div>
               </div>
               <div>
                 <label className="block text-xs font-semibold text-gray-700 mb-1">Deskripsi Tugas</label>
-                <input
-                  value={addForm.deskripsi}
-                  onChange={(e) => setAddForm((f) => ({ ...f, deskripsi: e.target.value }))}
-                  placeholder="Opsional"
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#2F855A]"
-                />
+                <input value={addForm.deskripsi} onChange={(e) => setAddForm((f) => ({ ...f, deskripsi: e.target.value }))}
+                  placeholder="Opsional" className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#2F855A]" />
               </div>
               <div className="flex gap-3 pt-1">
-                <button onClick={() => setShowAdd(false)} className="flex-1 border border-gray-200 text-gray-600 text-sm font-semibold py-2.5 rounded-xl hover:bg-gray-50">Batal</button>
-                <button
-                  onClick={handleAdd}
-                  disabled={!addForm.staffId}
-                  className="flex-1 bg-[#2F855A] text-white text-sm font-semibold py-2.5 rounded-xl hover:bg-[#276749] disabled:opacity-50"
-                >
-                  Tambah
+                <button type="button" onClick={() => setShowAdd(false)} className="flex-1 border border-gray-200 text-gray-600 text-sm font-semibold py-2.5 rounded-xl hover:bg-gray-50">Batal</button>
+                <button type="button" onClick={handleAdd} disabled={!addForm.staffId || addSaving}
+                  className="flex-1 bg-[#2F855A] text-white text-sm font-semibold py-2.5 rounded-xl hover:bg-[#276749] disabled:opacity-50">
+                  {addSaving ? "Menyimpan..." : "Tambah"}
                 </button>
               </div>
             </div>
@@ -414,50 +404,50 @@ export default function ManagerJadwalPage() {
         </div>
       )}
 
-      {/* ── Modal: Edit Staff ── */}
-      {editStaff && (
-        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={() => setEditStaff(null)}>
+      {/* ── Modal: Edit Jadwal ── */}
+      {editRow && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={() => setEditRow(null)}>
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-              <h2 className="font-semibold text-gray-900">Edit Jadwal Petugas</h2>
-              <button onClick={() => setEditStaff(null)} className="text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>
+              <h2 className="font-semibold text-gray-900">Edit Jadwal</h2>
+              <button type="button" onClick={() => setEditRow(null)} title="Tutup"><X className="w-5 h-5 text-gray-400" /></button>
             </div>
             <div className="p-5 space-y-4">
               <div className="flex items-center gap-2.5">
                 <div className="w-9 h-9 rounded-full bg-[#2F855A]/10 flex items-center justify-center text-[#2F855A] text-sm font-bold shrink-0">
-                  {editStaff.namaPetugas[0]}
+                  {editRow.staff_members?.nama?.[0] ?? "?"}
                 </div>
                 <div>
-                  <p className="text-sm font-semibold text-gray-900">{editStaff.namaPetugas}</p>
-                  <p className="text-xs text-gray-400">{editStaff.jabatan}</p>
+                  <p className="text-sm font-semibold text-gray-900">{editRow.staff_members?.nama ?? "—"}</p>
+                  <p className="text-xs text-gray-400">{editRow.staff_members?.jabatan ?? "—"}</p>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-semibold text-gray-700 mb-1">Jam Mulai</label>
-                  <input type="time" value={editStaff.jamMulai}
-                    onChange={(e) => setEditStaff((s) => s ? { ...s, jamMulai: e.target.value } : s)}
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#2F855A]" />
+                  <input type="time" value={editRow.jam_mulai}
+                    onChange={(e) => setEditRow((r) => r ? { ...r, jam_mulai: e.target.value } : r)}
+                    title="Jam mulai" className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#2F855A]" />
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-gray-700 mb-1">Jam Selesai</label>
-                  <input type="time" value={editStaff.jamSelesai}
-                    onChange={(e) => setEditStaff((s) => s ? { ...s, jamSelesai: e.target.value } : s)}
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#2F855A]" />
+                  <input type="time" value={editRow.jam_selesai}
+                    onChange={(e) => setEditRow((r) => r ? { ...r, jam_selesai: e.target.value } : r)}
+                    title="Jam selesai" className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#2F855A]" />
                 </div>
               </div>
               <div>
                 <label className="block text-xs font-semibold text-gray-700 mb-1">Deskripsi Tugas</label>
-                <input
-                  value={editStaff.deskripsi}
-                  onChange={(e) => setEditStaff((s) => s ? { ...s, deskripsi: e.target.value } : s)}
-                  placeholder="Opsional"
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#2F855A]"
-                />
+                <input value={editRow.deskripsi ?? ""}
+                  onChange={(e) => setEditRow((r) => r ? { ...r, deskripsi: e.target.value } : r)}
+                  placeholder="Opsional" className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#2F855A]" />
               </div>
               <div className="flex gap-3 pt-1">
-                <button onClick={() => setEditStaff(null)} className="flex-1 border border-gray-200 text-gray-600 text-sm font-semibold py-2.5 rounded-xl hover:bg-gray-50">Batal</button>
-                <button onClick={handleSaveEdit} className="flex-1 bg-[#2F855A] text-white text-sm font-semibold py-2.5 rounded-xl hover:bg-[#276749]">Simpan</button>
+                <button type="button" onClick={() => setEditRow(null)} className="flex-1 border border-gray-200 text-gray-600 text-sm font-semibold py-2.5 rounded-xl hover:bg-gray-50">Batal</button>
+                <button type="button" onClick={handleSaveEdit} disabled={editSaving}
+                  className="flex-1 bg-[#2F855A] text-white text-sm font-semibold py-2.5 rounded-xl hover:bg-[#276749] disabled:opacity-60">
+                  {editSaving ? "Menyimpan..." : "Simpan"}
+                </button>
               </div>
             </div>
           </div>
