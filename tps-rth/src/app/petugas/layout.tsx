@@ -3,14 +3,15 @@
 import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
-import { Leaf, LayoutDashboard, Trash2, LogOut, Menu, X, ChevronRight, CalendarCheck, FileText, Home } from "lucide-react";
+import { Leaf, LayoutDashboard, Trash2, LogOut, Menu, X, ChevronRight, CalendarCheck, FileText, Home, Bell } from "lucide-react";
 import { getSession, clearSession, type SessionUser } from "@/lib/mockAuth";
 
 const navItems = [
-  { href: "/petugas/dashboard", label: "Dashboard",    icon: LayoutDashboard },
-  { href: "/petugas/absen",     label: "Absen",        icon: CalendarCheck },
-  { href: "/petugas/izin",      label: "Izin / Cuti",  icon: FileText },
-  { href: "/petugas/sampah",    label: "Input Sampah", icon: Trash2 },
+  { href: "/petugas/dashboard",  label: "Dashboard",    icon: LayoutDashboard },
+  { href: "/petugas/absen",      label: "Absen",        icon: CalendarCheck },
+  { href: "/petugas/izin",       label: "Izin / Cuti",  icon: FileText },
+  { href: "/petugas/sampah",     label: "Input Sampah", icon: Trash2 },
+  { href: "/petugas/notifikasi", label: "Notifikasi",   icon: Bell },
 ];
 
 export default function PetugasLayout({ children }: { children: React.ReactNode }) {

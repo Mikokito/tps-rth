@@ -4,24 +4,24 @@ import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
-  Leaf, LayoutDashboard, Trash2, BarChart2, Users, UserCheck,
+  Leaf, LayoutDashboard, Trash2, Users, UserCheck,
   List, Newspaper, FileText, CalendarCheck, CalendarRange,
-  Menu, X, LogOut, ChevronRight, Banknote, Home,
+  Menu, X, LogOut, ChevronRight, Banknote, Home, Bell,
 } from "lucide-react";
 import { getSession, clearSession, type SessionUser } from "@/lib/mockAuth";
 
 const navItems = [
-  { href: "/admin/dashboard", label: "Dashboard",       icon: LayoutDashboard },
-  { href: "/admin/sampah",        label: "Data Sampah",      icon: Trash2 },
-  { href: "/admin/rekap-sampah",  label: "Rekap Sampah",     icon: BarChart2 },
-  { href: "/admin/daftar-sampah",     label: "Daftar Sampah",     icon: List },
-  { href: "/admin/petugas",   label: "Petugas",  icon: Users },
-  { href: "/admin/absen",      label: "Absen",             icon: CalendarCheck },
-  { href: "/admin/izin-cuti", label: "Izin & Cuti",      icon: CalendarRange },
-  { href: "/admin/nasabah",   label: "Nasabah",           icon: UserCheck },
-  { href: "/admin/iuran",     label: "Iuran",             icon: Banknote },
-  { href: "/admin/berita",    label: "Berita",            icon: Newspaper },
-  { href: "/admin/laporan",   label: "Laporan",           icon: FileText },
+  { href: "/admin/dashboard",     label: "Dashboard",       icon: LayoutDashboard },
+  { href: "/admin/sampah",        label: "Data Sampah",     icon: Trash2 },
+  { href: "/admin/daftar-sampah", label: "Daftar Sampah",   icon: List },
+  { href: "/admin/petugas",       label: "Petugas",         icon: Users },
+  { href: "/admin/absen",         label: "Absen",           icon: CalendarCheck },
+  { href: "/admin/izin-cuti",     label: "Izin & Cuti",     icon: CalendarRange },
+  { href: "/admin/nasabah",       label: "Nasabah",         icon: UserCheck },
+  { href: "/admin/iuran",         label: "Iuran",           icon: Banknote },
+  { href: "/admin/berita",        label: "Berita",          icon: Newspaper },
+  { href: "/admin/laporan",       label: "Laporan",         icon: FileText },
+  { href: "/admin/notifikasi",    label: "Notifikasi",      icon: Bell },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {

@@ -1,6 +1,7 @@
 "use server";
 
 import { createAdminClient } from "@/utils/supabase/admin";
+import { getPetugasPageData } from "@/app/actions/staff";
 
 export type NasabahData = {
   id: string;
@@ -76,6 +77,69 @@ export async function getDashboardData(email: string): Promise<{
     nasabahId: nasabahRow?.id ?? null,
     iuranList: (iuranData   as IuranRow[]) ?? [],
     harga:     hargaRow?.jumlah ?? 50000,
+  };
+}
+
+export type PetugasPerforma = {
+  nama: string;
+  jabatan: string;
+  hadir: number;
+  totalAbsen: number;
+  persen: number;
+};
+
+export async function getAdminDashboardData(): Promise<{
+  totalNasabah: number;
+  nasabahAktif: number;
+  totalPetugas: number;
+  totalSampahKg: number;
+  iuranPending: number;
+  iuranSukses: number;
+  petugasPerforma: PetugasPerforma[];
+  error?: string;
+}> {
+  const supabase = createAdminClient();
+
+  const [
+    { data: nasabahData, error: nasabahError },
+    { data: wasteData, error: wasteError },
+    { data: iuranData, error: iuranError },
+    { data: absenData, error: absenError },
+    { staff: staffData, error: staffError },
+  ] = await Promise.all([
+    supabase.from("nasabah").select("id, status_aktif"),
+    supabase.from("waste_entries").select("berat_kg"),
+    supabase.from("iuran").select("id, status"),
+    supabase.from("absensi").select("staff_id, status"),
+    getPetugasPageData(),
+  ]);
+
+  const petugasRoster = staffData.filter((s) => s.role === "petugas");
+
+  const petugasPerforma: PetugasPerforma[] = petugasRoster
+    .map((p) => {
+      const rows = (absenData ?? []).filter((a) => a.staff_id === p.staffRowId);
+      const hadir = rows.filter((a) => a.status === "hadir").length;
+      const totalAbsen = rows.length;
+      return {
+        nama: p.nama,
+        jabatan: p.jabatan,
+        hadir,
+        totalAbsen,
+        persen: totalAbsen > 0 ? Math.round((hadir / totalAbsen) * 100) : 0,
+      };
+    })
+    .sort((a, b) => b.persen - a.persen || b.hadir - a.hadir);
+
+  return {
+    totalNasabah: (nasabahData ?? []).length,
+    nasabahAktif: (nasabahData ?? []).filter((m) => m.status_aktif).length,
+    totalPetugas: petugasRoster.length,
+    totalSampahKg: (wasteData ?? []).reduce((t, w) => t + (w.berat_kg ?? 0), 0),
+    iuranPending: (iuranData ?? []).filter((i) => i.status === "menunggu").length,
+    iuranSukses: (iuranData ?? []).filter((i) => i.status === "diverifikasi").length,
+    petugasPerforma,
+    error: nasabahError?.message ?? wasteError?.message ?? iuranError?.message ?? absenError?.message ?? staffError,
   };
 }
 

@@ -3,11 +3,12 @@
 import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
-import { Leaf, LayoutDashboard, LogOut, Menu, X, ChevronRight, Home } from "lucide-react";
+import { Leaf, LayoutDashboard, LogOut, Menu, X, ChevronRight, Home, Bell } from "lucide-react";
 import { getSession, clearSession, type SessionUser } from "@/lib/mockAuth";
 
 const navItems = [
-  { href: "/user/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/user/dashboard",    label: "Dashboard",   icon: LayoutDashboard },
+  { href: "/user/notifikasi",   label: "Notifikasi",  icon: Bell },
 ];
 
 export default function UserLayout({ children }: { children: React.ReactNode }) {

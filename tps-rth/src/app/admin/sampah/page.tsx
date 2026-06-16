@@ -7,12 +7,14 @@ import { createClient } from "@/utils/supabase/client";
 type WasteEntry = {
   id: string;
   tanggal: string;
-  petugas_nama: string;
-  jenis_sampah: string;
   berat_kg: number;
-  catatan: string;
+  catatan: string | null;
   created_at: string;
+  jenis_sampah: { nama: string; kategori: string } | null;
+  petugas: { nama: string } | null;
 };
+
+const ENTRY_SELECT = "id, tanggal, berat_kg, catatan, created_at, jenis_sampah:jenis_sampah_id ( nama, kategori ), petugas:petugas_id ( nama )";
 
 function fmtDate(iso: string) {
   return new Date(iso + "T00:00:00").toLocaleDateString("id-ID", {
@@ -62,22 +64,22 @@ export default function AdminSampahPage() {
     const supabase = createClient();
     const { data } = await supabase
       .from("waste_entries")
-      .select("id, tanggal, petugas_nama, jenis_sampah, berat_kg, catatan, created_at")
+      .select(ENTRY_SELECT)
       .order("tanggal", { ascending: false })
       .order("created_at", { ascending: false });
-    if (data) setEntries(data);
+    if (data) setEntries(data as unknown as WasteEntry[]);
     setReady(true);
   }
 
   const uniqueJenis = useMemo(() => {
-    const set = new Set(entries.map((e) => e.jenis_sampah));
+    const set = new Set(entries.map((e) => e.jenis_sampah?.kategori).filter((v): v is string => !!v));
     return ["Semua", ...Array.from(set).sort()];
   }, [entries]);
 
   const filtered = useMemo(() => {
     return entries.filter((e) => {
-      const matchSearch = !search || e.petugas_nama.toLowerCase().includes(search.toLowerCase());
-      const matchJenis  = filterJenis === "Semua" || e.jenis_sampah === filterJenis;
+      const matchSearch = !search || (e.petugas?.nama ?? "").toLowerCase().includes(search.toLowerCase());
+      const matchJenis  = filterJenis === "Semua" || e.jenis_sampah?.kategori === filterJenis;
       const matchDate   = !filterTanggal || e.tanggal === filterTanggal;
       return matchSearch && matchJenis && matchDate;
     });
@@ -85,7 +87,10 @@ export default function AdminSampahPage() {
 
   const summaryByJenis = useMemo(() => {
     const map: Record<string, number> = {};
-    filtered.forEach((e) => { map[e.jenis_sampah] = (map[e.jenis_sampah] || 0) + e.berat_kg; });
+    filtered.forEach((e) => {
+      const k = e.jenis_sampah?.kategori ?? "Lainnya";
+      map[k] = (map[k] || 0) + e.berat_kg;
+    });
     return Object.entries(map).sort((a, b) => b[1] - a[1]);
   }, [filtered]);
 
@@ -180,20 +185,22 @@ export default function AdminSampahPage() {
                 <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Tanggal</th>
                 <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Petugas</th>
                 <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Jenis Sampah</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Detail</th>
                 <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Berat</th>
                 <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Catatan</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
               {filtered.length === 0 ? (
-                <tr><td colSpan={5} className="px-5 py-10 text-center text-sm text-gray-400">
+                <tr><td colSpan={6} className="px-5 py-10 text-center text-sm text-gray-400">
                   {hasFilters ? "Tidak ada data sesuai filter." : "Belum ada data sampah."}
                 </td></tr>
               ) : filtered.map((entry) => (
                 <tr key={entry.id} className="hover:bg-gray-50 transition-colors">
                   <td className="px-5 py-3.5 text-xs text-gray-600 whitespace-nowrap">{entry.tanggal}</td>
-                  <td className="px-5 py-3.5 text-sm font-medium text-gray-900">{entry.petugas_nama}</td>
-                  <td className="px-4 py-3.5"><JenisBadge jenis={entry.jenis_sampah} /></td>
+                  <td className="px-5 py-3.5 text-sm font-medium text-gray-900">{entry.petugas?.nama ?? "—"}</td>
+                  <td className="px-4 py-3.5"><JenisBadge jenis={entry.jenis_sampah?.kategori ?? "—"} /></td>
+                  <td className="px-4 py-3.5 text-xs text-gray-500">{entry.jenis_sampah?.nama ?? "—"}</td>
                   <td className="px-4 py-3.5 text-right text-sm font-semibold text-gray-900 whitespace-nowrap">{entry.berat_kg} kg</td>
                   <td className="px-4 py-3.5 text-xs text-gray-400 max-w-48">{entry.catatan || "—"}</td>
                 </tr>
@@ -212,13 +219,14 @@ export default function AdminSampahPage() {
             <div key={entry.id} className="px-4 py-3.5">
               <div className="flex items-start justify-between gap-3 mb-1.5">
                 <div>
-                  <p className="text-sm font-semibold text-gray-900">{entry.petugas_nama}</p>
+                  <p className="text-sm font-semibold text-gray-900">{entry.petugas?.nama ?? "—"}</p>
                   <p className="text-xs text-gray-400">{entry.tanggal}</p>
                 </div>
                 <p className="text-sm font-bold text-gray-900 shrink-0">{entry.berat_kg} kg</p>
               </div>
               <div className="flex items-center gap-2 flex-wrap">
-                <JenisBadge jenis={entry.jenis_sampah} />
+                <JenisBadge jenis={entry.jenis_sampah?.kategori ?? "—"} />
+                <span className="text-xs text-gray-500">{entry.jenis_sampah?.nama ?? "—"}</span>
                 {entry.catatan && <span className="text-xs text-gray-400">· {entry.catatan}</span>}
               </div>
             </div>

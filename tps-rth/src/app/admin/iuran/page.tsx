@@ -1,27 +1,9 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { Pencil, Check, X, CheckCircle, Clock, XCircle, ImageIcon, Save } from "lucide-react";
-import { createClient } from "@/utils/supabase/client";
-
-type IuranRecord = {
-  id: string;
-  user_email: string;
-  user_nama: string;
-  bulan_idx: number;
-  tahun: number;
-  label_bulan: string;
-  foto_nama: string;
-  foto_data_url: string;
-  status_verifikasi: "menunggu" | "diverifikasi" | "ditolak";
-  submitted_at: string;
-  verified_at?: string;
-  harga_iuran?: number;
-};
-
-type HargaIuran = { id?: string; harga: number; last_modified: string };
-
-const DEFAULT_HARGA: HargaIuran = { harga: 50000, last_modified: new Date().toISOString().slice(0, 10) };
+import { Pencil, Check, X, CheckCircle, Clock, XCircle, ImageIcon, Save, AlertTriangle } from "lucide-react";
+import { getAllIuran, updateIuranStatus, getHargaIuran, setHargaIuran, type IuranRecord, type IuranStatus } from "@/app/actions/iuran";
+import { BULAN_LABEL } from "@/lib/bulan";
 
 function formatRp(n: number) { return "Rp " + n.toLocaleString("id-ID"); }
 
@@ -29,12 +11,12 @@ function fmtDate(iso: string) {
   return new Date(iso).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" });
 }
 
-const STATUS_STYLE: Record<IuranRecord["status_verifikasi"], string> = {
+const STATUS_STYLE: Record<IuranStatus, string> = {
   menunggu:    "bg-amber-50 text-amber-600",
   diverifikasi:"bg-green-100 text-green-700",
   ditolak:     "bg-red-50 text-red-500",
 };
-const STATUS_LABEL: Record<IuranRecord["status_verifikasi"], string> = {
+const STATUS_LABEL: Record<IuranStatus, string> = {
   menunggu: "Menunggu", diverifikasi: "Diverifikasi", ditolak: "Ditolak",
 };
 
@@ -43,72 +25,62 @@ export default function AdminIuranPage() {
   const TAHUN_OPTIONS = Array.from({ length: 4 }, (_, i) => now.getFullYear() - 1 + i);
 
   const [payments, setPayments]       = useState<IuranRecord[]>([]);
-  const [hargaData, setHargaData]     = useState<HargaIuran>(DEFAULT_HARGA);
+  const [harga, setHarga]             = useState(50000);
   const [editHarga, setEditHarga]     = useState(false);
   const [hargaInput, setHargaInput]   = useState("");
   const [filterTahun, setFilterTahun] = useState(now.getFullYear());
   const [fotoModal, setFotoModal]     = useState<IuranRecord | null>(null);
-  const [filterStatus, setFilterStatus] = useState<"semua" | IuranRecord["status_verifikasi"]>("semua");
+  const [filterStatus, setFilterStatus] = useState<"semua" | IuranStatus>("semua");
   const [ready, setReady]             = useState(false);
+  const [loadError, setLoadError]     = useState<string | undefined>();
 
   useEffect(() => { load(); }, []);
 
   async function load() {
-    const supabase = createClient();
-    const [{ data: iuranData }, { data: hargaRow }] = await Promise.all([
-      supabase.from("iuran")
-        .select("id, user_email, user_nama, bulan_idx, tahun, label_bulan, foto_nama, foto_data_url, status_verifikasi, submitted_at, verified_at, harga_iuran")
-        .order("submitted_at", { ascending: false }),
-      supabase.from("harga_iuran").select("id, harga, last_modified").order("last_modified", { ascending: false }).limit(1).maybeSingle(),
+    const [{ data: iuranData, error }, hargaData] = await Promise.all([
+      getAllIuran(),
+      getHargaIuran(),
     ]);
-    if (iuranData) setPayments(iuranData);
-    const h = hargaRow ?? DEFAULT_HARGA;
-    setHargaData(h);
-    setHargaInput(h.harga.toString());
+    setPayments(iuranData);
+    setHarga(hargaData.jumlah);
+    setHargaInput(hargaData.jumlah.toString());
+    setLoadError(error);
     setReady(true);
   }
 
   async function saveHarga() {
-    const harga = parseInt(hargaInput.replace(/\D/g, ""), 10);
-    if (!harga || harga <= 0) return;
-    const last_modified = new Date().toISOString().slice(0, 10);
-    const supabase = createClient();
-    if (hargaData.id) {
-      await supabase.from("harga_iuran").update({ harga, last_modified }).eq("id", hargaData.id);
-      setHargaData({ id: hargaData.id, harga, last_modified });
-    } else {
-      const { data } = await supabase.from("harga_iuran").insert({ harga, last_modified })
-        .select("id, harga, last_modified").single();
-      if (data) setHargaData(data);
-    }
+    const jumlah = parseInt(hargaInput.replace(/\D/g, ""), 10);
+    if (!jumlah || jumlah <= 0) return;
+    await setHargaIuran(jumlah);
+    setHarga(jumlah);
     setEditHarga(false);
   }
 
-  async function updateStatus(id: string, status: IuranRecord["status_verifikasi"]) {
+  async function updateStatus(id: string, status: IuranStatus) {
+    const { error } = await updateIuranStatus(id, status);
+    if (error) return;
     const verified_at = status === "diverifikasi" ? new Date().toISOString() : null;
-    const supabase = createClient();
-    await supabase.from("iuran").update({ status_verifikasi: status, verified_at }).eq("id", id);
     setPayments((prev) =>
-      prev.map((p) => p.id === id ? { ...p, status_verifikasi: status, verified_at: verified_at ?? undefined } : p)
+      prev.map((p) => p.id === id ? { ...p, status, verified_at } : p)
     );
   }
 
   const filtered = useMemo(() => {
     return payments
       .filter((p) => p.tahun === filterTahun)
-      .filter((p) => filterStatus === "semua" || p.status_verifikasi === filterStatus)
+      .filter((p) => filterStatus === "semua" || p.status === filterStatus)
       .sort((a, b) => b.submitted_at.localeCompare(a.submitted_at));
   }, [payments, filterTahun, filterStatus]);
 
   const stats = useMemo(() => {
     const tahunPayments = payments.filter((p) => p.tahun === filterTahun);
-    const terverifikasi = tahunPayments.filter((p) => p.status_verifikasi === "diverifikasi").length;
-    const menunggu      = tahunPayments.filter((p) => p.status_verifikasi === "menunggu").length;
+    const terverifikasi = tahunPayments.filter((p) => p.status === "diverifikasi").length;
+    const menunggu      = tahunPayments.filter((p) => p.status === "menunggu").length;
     const totalNominal  = tahunPayments
-      .filter((p) => p.status_verifikasi === "diverifikasi")
-      .reduce((sum, p) => sum + (p.harga_iuran ?? hargaData.harga), 0);
+      .filter((p) => p.status === "diverifikasi")
+      .reduce((sum, p) => sum + (p.harga_iuran ?? harga), 0);
     return { terverifikasi, menunggu, totalNominal };
-  }, [payments, filterTahun, hargaData.harga]);
+  }, [payments, filterTahun, harga]);
 
   if (!ready) {
     return <div className="flex h-40 items-center justify-center text-gray-400 text-sm">Memuat data...</div>;
@@ -120,6 +92,13 @@ export default function AdminIuranPage() {
         <h1 className="text-xl font-bold text-gray-900">Iuran Nasabah</h1>
         <p className="text-sm text-gray-500">Kelola harga iuran dan verifikasi pembayaran nasabah</p>
       </div>
+
+      {loadError && (
+        <div className="flex items-start gap-2 bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl px-4 py-3">
+          <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
+          <span>Gagal memuat data: {loadError}</span>
+        </div>
+      )}
 
       {/* Harga Iuran */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 flex items-center justify-between flex-wrap gap-4">
@@ -139,21 +118,18 @@ export default function AdminIuranPage() {
                 />
               </div>
             ) : (
-              <p className="text-2xl font-bold text-gray-900">{formatRp(hargaData.harga)}</p>
+              <p className="text-2xl font-bold text-gray-900">{formatRp(harga)}</p>
             )}
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <div className="text-xs text-gray-400 me-4">
-            Terakhir diubah: <span className="font-medium text-gray-600">{hargaData.last_modified}</span>
-          </div>
           {editHarga ? (
             <>
               <button type="button" onClick={saveHarga}
                 className="flex items-center gap-1.5 text-sm font-semibold text-white bg-[#2F855A] px-4 py-2 rounded-xl hover:bg-[#276749] transition-colors">
                 <Save className="w-3.5 h-3.5" /> Simpan
               </button>
-              <button type="button" onClick={() => { setEditHarga(false); setHargaInput(hargaData.harga.toString()); }}
+              <button type="button" onClick={() => { setEditHarga(false); setHargaInput(harga.toString()); }}
                 className="flex items-center gap-1.5 text-sm font-medium text-gray-500 border border-gray-200 px-4 py-2 rounded-xl hover:bg-gray-50">
                 <X className="w-3.5 h-3.5" /> Batal
               </button>
@@ -230,11 +206,11 @@ export default function AdminIuranPage() {
                 <tr key={p.id} className="hover:bg-gray-50 transition-colors">
                   <td className="px-5 py-3.5">
                     <p className="text-sm font-medium text-gray-900">{p.user_nama}</p>
-                    <p className="text-xs text-gray-400">{p.user_email}</p>
+                    <p className="text-xs text-gray-400">{p.nasabah_email}</p>
                   </td>
-                  <td className="px-4 py-3.5 text-sm text-gray-700 font-medium">{p.label_bulan}</td>
+                  <td className="px-4 py-3.5 text-sm text-gray-700 font-medium">{BULAN_LABEL[p.bulan - 1]} {p.tahun}</td>
                   <td className="px-4 py-3.5 text-center text-sm font-semibold text-gray-800">
-                    {formatRp(p.harga_iuran ?? hargaData.harga)}
+                    {formatRp(p.harga_iuran ?? harga)}
                   </td>
                   <td className="px-4 py-3.5 text-center">
                     {p.foto_nama ? (
@@ -255,15 +231,15 @@ export default function AdminIuranPage() {
                   </td>
                   <td className="px-4 py-3.5 text-center text-xs text-gray-500">{fmtDate(p.submitted_at)}</td>
                   <td className="px-4 py-3.5 text-center">
-                    <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold ${STATUS_STYLE[p.status_verifikasi]}`}>
-                      {p.status_verifikasi === "diverifikasi" && <CheckCircle className="w-3 h-3" />}
-                      {p.status_verifikasi === "menunggu"     && <Clock className="w-3 h-3" />}
-                      {p.status_verifikasi === "ditolak"      && <XCircle className="w-3 h-3" />}
-                      {STATUS_LABEL[p.status_verifikasi]}
+                    <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold ${STATUS_STYLE[p.status]}`}>
+                      {p.status === "diverifikasi" && <CheckCircle className="w-3 h-3" />}
+                      {p.status === "menunggu"     && <Clock className="w-3 h-3" />}
+                      {p.status === "ditolak"      && <XCircle className="w-3 h-3" />}
+                      {STATUS_LABEL[p.status]}
                     </span>
                   </td>
                   <td className="px-4 py-3.5 text-center">
-                    {p.status_verifikasi === "menunggu" ? (
+                    {p.status === "menunggu" ? (
                       <div className="flex items-center gap-1.5 justify-center">
                         <button type="button" onClick={() => updateStatus(p.id, "diverifikasi")}
                           className="flex items-center gap-1 text-xs font-semibold text-white bg-[#2F855A] px-2.5 py-1.5 rounded-lg hover:bg-[#276749] transition-colors">
@@ -274,7 +250,7 @@ export default function AdminIuranPage() {
                           <X className="w-3 h-3" /> Tolak
                         </button>
                       </div>
-                    ) : p.status_verifikasi === "ditolak" ? (
+                    ) : p.status === "ditolak" ? (
                       <button type="button" onClick={() => updateStatus(p.id, "menunggu")}
                         className="text-xs font-medium text-gray-400 hover:text-gray-600 hover:underline">
                         Reset
@@ -313,23 +289,23 @@ export default function AdminIuranPage() {
                   <div className="flex items-start justify-between gap-2">
                     <div>
                       <p className="text-sm font-semibold text-gray-900">{p.user_nama}</p>
-                      <p className="text-xs text-gray-400">{p.user_email}</p>
-                      <p className="text-xs text-gray-500 mt-0.5 font-medium">{p.label_bulan}</p>
+                      <p className="text-xs text-gray-400">{p.nasabah_email}</p>
+                      <p className="text-xs text-gray-500 mt-0.5 font-medium">{BULAN_LABEL[p.bulan - 1]} {p.tahun}</p>
                     </div>
-                    <span className={`inline-flex items-center gap-1 shrink-0 px-2.5 py-1 rounded-full text-xs font-semibold ${STATUS_STYLE[p.status_verifikasi]}`}>
-                      {p.status_verifikasi === "diverifikasi" && <CheckCircle className="w-3 h-3" />}
-                      {p.status_verifikasi === "menunggu"     && <Clock className="w-3 h-3" />}
-                      {p.status_verifikasi === "ditolak"      && <XCircle className="w-3 h-3" />}
-                      {STATUS_LABEL[p.status_verifikasi]}
+                    <span className={`inline-flex items-center gap-1 shrink-0 px-2.5 py-1 rounded-full text-xs font-semibold ${STATUS_STYLE[p.status]}`}>
+                      {p.status === "diverifikasi" && <CheckCircle className="w-3 h-3" />}
+                      {p.status === "menunggu"     && <Clock className="w-3 h-3" />}
+                      {p.status === "ditolak"      && <XCircle className="w-3 h-3" />}
+                      {STATUS_LABEL[p.status]}
                     </span>
                   </div>
                   <div className="flex items-center justify-between text-xs text-gray-400 mt-1">
                     <span>Dikirim: {fmtDate(p.submitted_at)}</span>
-                    <span className="font-semibold text-gray-700">{formatRp(p.harga_iuran ?? hargaData.harga)}</span>
+                    <span className="font-semibold text-gray-700">{formatRp(p.harga_iuran ?? harga)}</span>
                   </div>
                 </div>
               </div>
-              {p.status_verifikasi === "menunggu" && (
+              {p.status === "menunggu" && (
                 <div className="flex gap-2">
                   <button type="button" onClick={() => updateStatus(p.id, "diverifikasi")}
                     className="flex-1 flex items-center justify-center gap-1 text-xs font-semibold text-white bg-[#2F855A] py-2 rounded-lg hover:bg-[#276749]">
@@ -353,7 +329,7 @@ export default function AdminIuranPage() {
             <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
               <div>
                 <p className="font-semibold text-gray-900 text-sm">{fotoModal.user_nama}</p>
-                <p className="text-xs text-gray-400">{fotoModal.label_bulan}</p>
+                <p className="text-xs text-gray-400">{BULAN_LABEL[fotoModal.bulan - 1]} {fotoModal.tahun}</p>
               </div>
               <button type="button" onClick={() => setFotoModal(null)} className="text-gray-400 hover:text-gray-600" title="Tutup">
                 <X className="w-5 h-5" />

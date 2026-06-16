@@ -3,34 +3,15 @@
 import { useState, useEffect, useRef } from "react";
 import { Upload, Check, X, Clock, Send, FileImage } from "lucide-react";
 import { getSession, type SessionUser } from "@/lib/mockAuth";
-import { createClient } from "@/utils/supabase/client";
+import { getMyIuran, submitIuran, getHargaIuran, type IuranRecord } from "@/app/actions/iuran";
+import { BULAN_LABEL } from "@/lib/bulan";
 
-export type IuranSubmission = {
-  id: string;
-  user_email: string;
-  user_nama: string;
-  bulan_idx: number;
-  tahun: number;
-  label_bulan: string;
-  foto_nama: string;
-  foto_data_url: string;
-  status_verifikasi: "menunggu" | "diverifikasi" | "ditolak";
-  submitted_at: string;
-  verified_at?: string;
-  harga_iuran?: number;
-};
-
-export const BULAN_LABEL = [
-  "Januari","Februari","Maret","April","Mei","Juni",
-  "Juli","Agustus","September","Oktober","November","Desember",
-];
-
-const STATUS_STYLE: Record<IuranSubmission["status_verifikasi"], string> = {
+const STATUS_STYLE: Record<IuranRecord["status"], string> = {
   menunggu:    "bg-amber-50 text-amber-600 border border-amber-200",
   diverifikasi:"bg-green-50 text-green-700 border border-green-200",
   ditolak:     "bg-red-50 text-red-500 border border-red-200",
 };
-const STATUS_LABEL_MAP: Record<IuranSubmission["status_verifikasi"], string> = {
+const STATUS_LABEL_MAP: Record<IuranRecord["status"], string> = {
   menunggu:    "Menunggu Verifikasi",
   diverifikasi:"Sudah Diverifikasi",
   ditolak:     "Ditolak",
@@ -47,7 +28,7 @@ export default function UserIuranPage() {
   const TAHUN_OPTIONS = [now.getFullYear() - 1, now.getFullYear(), now.getFullYear() + 1];
 
   const [session, setSession] = useState<SessionUser | null>(null);
-  const [submissions, setSubmissions] = useState<IuranSubmission[]>([]);
+  const [submissions, setSubmissions] = useState<IuranRecord[]>([]);
   const [harga, setHarga] = useState(50000);
   const [bulanIdx, setBulanIdx] = useState(now.getMonth());
   const [tahun, setTahun] = useState(now.getFullYear());
@@ -64,16 +45,12 @@ export default function UserIuranPage() {
       setSession(s);
       if (!s) return;
 
-      const supabase = createClient();
-      const [{ data: iuranData }, { data: hargaRow }] = await Promise.all([
-        supabase.from("iuran")
-          .select("id, user_email, user_nama, bulan_idx, tahun, label_bulan, foto_nama, foto_data_url, status_verifikasi, submitted_at, verified_at, harga_iuran")
-          .eq("user_email", s.email)
-          .order("submitted_at", { ascending: false }),
-        supabase.from("harga_iuran").select("harga").order("last_modified", { ascending: false }).limit(1).maybeSingle(),
+      const [{ data: iuranData }, hargaData] = await Promise.all([
+        getMyIuran(s.id, s.email),
+        getHargaIuran(),
       ]);
-      if (iuranData) setSubmissions(iuranData);
-      if (hargaRow?.harga) setHarga(hargaRow.harga);
+      setSubmissions(iuranData);
+      setHarga(hargaData.jumlah);
     }
     init();
   }, []);
@@ -96,8 +73,9 @@ export default function UserIuranPage() {
   async function handleSubmit(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!foto) { setFormErr("Foto bukti wajib diunggah"); return; }
+    const bulan = bulanIdx + 1;
     const labelBulan = `${BULAN_LABEL[bulanIdx]} ${tahun}`;
-    if (submissions.some((s) => s.bulan_idx === bulanIdx && s.tahun === tahun)) {
+    if (submissions.some((s) => s.bulan === bulan && s.tahun === tahun)) {
       setFormErr(`Iuran ${labelBulan} sudah pernah diajukan`);
       return;
     }
@@ -105,20 +83,18 @@ export default function UserIuranPage() {
     setFormErr("");
     setSending(true);
 
-    const supabase = createClient();
-    const { data } = await supabase.from("iuran").insert({
-      user_email: session.email,
-      user_nama: session.nama,
-      bulan_idx: bulanIdx,
+    const { data, error } = await submitIuran({
+      userId: session.id,
+      email: session.email,
+      userNama: session.nama,
+      bulan,
       tahun,
-      label_bulan: labelBulan,
-      foto_nama: foto.nama,
-      foto_data_url: foto.dataUrl,
-      status_verifikasi: "menunggu",
-      submitted_at: new Date().toISOString(),
-      harga_iuran: harga,
-    }).select("id, user_email, user_nama, bulan_idx, tahun, label_bulan, foto_nama, foto_data_url, status_verifikasi, submitted_at, verified_at, harga_iuran").single();
+      jumlah: harga,
+      fotoNama: foto.nama,
+      fotoDataUrl: foto.dataUrl,
+    });
 
+    if (error) { setFormErr(error); setSending(false); return; }
     if (data) setSubmissions((prev) => [data, ...prev]);
     clearFoto();
     setSending(false);
@@ -231,15 +207,15 @@ export default function UserIuranPage() {
                 <div key={sub.id} className="px-6 py-4">
                   <div className="flex items-start justify-between gap-3 mb-1.5">
                     <div className="min-w-0">
-                      <p className="text-sm font-semibold text-gray-900">{sub.label_bulan}</p>
+                      <p className="text-sm font-semibold text-gray-900">{BULAN_LABEL[sub.bulan - 1]} {sub.tahun}</p>
                       <p className="text-xs text-gray-400 mt-0.5">Dikirim: {fmtDate(sub.submitted_at)}</p>
                       {sub.foto_nama && <p className="text-xs text-gray-300 mt-0.5 truncate">📎 {sub.foto_nama}</p>}
                     </div>
-                    <span className={`inline-flex items-center gap-1.5 shrink-0 px-2.5 py-1 rounded-full text-xs font-semibold ${STATUS_STYLE[sub.status_verifikasi]}`}>
-                      {sub.status_verifikasi === "diverifikasi" && <Check className="w-3 h-3" />}
-                      {sub.status_verifikasi === "menunggu"    && <Clock className="w-3 h-3" />}
-                      {sub.status_verifikasi === "ditolak"     && <X className="w-3 h-3" />}
-                      {STATUS_LABEL_MAP[sub.status_verifikasi]}
+                    <span className={`inline-flex items-center gap-1.5 shrink-0 px-2.5 py-1 rounded-full text-xs font-semibold ${STATUS_STYLE[sub.status]}`}>
+                      {sub.status === "diverifikasi" && <Check className="w-3 h-3" />}
+                      {sub.status === "menunggu"    && <Clock className="w-3 h-3" />}
+                      {sub.status === "ditolak"     && <X className="w-3 h-3" />}
+                      {STATUS_LABEL_MAP[sub.status]}
                     </span>
                   </div>
                   {sub.foto_data_url && sub.foto_data_url.startsWith("data:image") && (

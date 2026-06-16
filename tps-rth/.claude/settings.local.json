@@ -5,7 +5,11 @@
       "Bash(git add *)",
       "Bash(git commit -m ' *)",
       "Bash(node -e \"require\\('@supabase/ssr'\\)\")",
-      "Bash(mkdir -p \"c:/Users/jlesl/Documents/Nextjs/tps-miko/tps-rth/src/app/\\(main\\)/berita/[id]\")"
+      "Bash(mkdir -p \"c:/Users/jlesl/Documents/Nextjs/tps-miko/tps-rth/src/app/\\(main\\)/berita/[id]\")",
+      "Bash(netstat -ano)",
+      "Bash(powershell -Command \"\\(Get-Process -Id 18104\\).StartTime\")",
+      "Bash(powershell -Command \"Stop-Process -Id 18104 -Force\")",
+      "Bash(npm run *)"
     ],
     "additionalDirectories": [
       "c:\\Users\\jlesl\\Documents\\Nextjs\\tps-miko\\tps-rth\\src\\app\\(main)\\berita"

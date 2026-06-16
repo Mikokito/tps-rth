@@ -6,16 +6,17 @@ import Link from "next/link";
 import {
   Leaf, CalendarDays, CalendarCheck, CalendarRange,
   Newspaper, Menu, LogOut, ChevronRight, ChevronLeft,
-  LayoutDashboard, Home,
+  LayoutDashboard, Home, Bell,
 } from "lucide-react";
 import { getSession, clearSession, type SessionUser } from "@/lib/mockAuth";
 
 const navItems = [
-  { href: "/manager/dashboard",  label: "Dashboard",       icon: LayoutDashboard },
-  { href: "/manager/jadwal",     label: "Jadwal Kerja",    icon: CalendarDays },
-  { href: "/manager/absen",      label: "Absen Petugas",   icon: CalendarCheck },
-  { href: "/manager/izin",       label: "Izin & Cuti",     icon: CalendarRange },
-  { href: "/manager/berita",     label: "Berita",          icon: Newspaper },
+  { href: "/manager/dashboard",   label: "Dashboard",       icon: LayoutDashboard },
+  { href: "/manager/jadwal",      label: "Jadwal Kerja",    icon: CalendarDays },
+  { href: "/manager/absen",       label: "Absen Petugas",   icon: CalendarCheck },
+  { href: "/manager/izin",        label: "Izin & Cuti",     icon: CalendarRange },
+  { href: "/manager/berita",      label: "Berita",          icon: Newspaper },
+  { href: "/manager/notifikasi",  label: "Notifikasi",      icon: Bell },
 ];
 
 export default function ManagerLayout({ children }: { children: React.ReactNode }) {

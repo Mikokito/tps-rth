@@ -1,21 +1,16 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { Search, CheckCircle, XCircle, Plus, Pencil, Trash2, X, Check } from "lucide-react";
-import { createClient } from "@/utils/supabase/client";
+import { Search, CheckCircle, XCircle, Plus, Pencil, Trash2, X, Check, AlertTriangle } from "lucide-react";
+import {
+  getNasabahList,
+  createNasabah,
+  updateNasabah,
+  deleteNasabah,
+  type NasabahMember,
+} from "@/app/actions/nasabah";
 
-type Member = {
-  id: string;
-  nama: string;
-  rw: string;
-  rt: string;
-  email: string;
-  hp: string;
-  alamat: string;
-  total_iuran: number;
-  status_aktif: boolean;
-  bergabung_tanggal: string;
-};
+type Member = NasabahMember;
 
 const RW_OPTIONS = ["Semua", "01", "02", "03", "04", "05"];
 const RT_OPTIONS = ["Semua", "01", "02", "03", "04", "05"];
@@ -39,16 +34,14 @@ export default function NasabahPage() {
   const [errors, setErrors] = useState<FormErrors>({});
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [loadError, setLoadError] = useState<string | undefined>();
 
   useEffect(() => { load(); }, []);
 
   async function load() {
-    const supabase = createClient();
-    const { data: rows } = await supabase
-      .from("nasabah")
-      .select("id, nama, rw, rt, email, hp, alamat, total_iuran, status_aktif, bergabung_tanggal")
-      .order("nama");
-    if (rows) setData(rows);
+    const { data: rows, error } = await getNasabahList();
+    setData(rows);
+    setLoadError(error);
   }
 
   const filtered = useMemo(() => {
@@ -94,7 +87,6 @@ export default function NasabahPage() {
     const errs = validate();
     if (Object.keys(errs).length > 0) { setErrors(errs); return; }
     setSaving(true);
-    const supabase = createClient();
     const payload = {
       nama: form.nama.trim(), rw: form.rw.trim(), rt: form.rt.trim(),
       email: form.email.trim(), hp: form.hp.trim(), alamat: form.alamat.trim(),
@@ -102,23 +94,21 @@ export default function NasabahPage() {
       bergabung_tanggal: form.bergabung_tanggal,
     };
     if (editMember) {
-      const { data: row } = await supabase
-        .from("nasabah").update(payload).eq("id", editMember.id)
-        .select("id, nama, rw, rt, email, hp, alamat, total_iuran, status_aktif, bergabung_tanggal").single();
+      const { data: row, error } = await updateNasabah(editMember.id, payload);
       if (row) setData((prev) => prev.map((m) => m.id === editMember.id ? row : m));
+      else if (error) { setLoadError(error); setSaving(false); return; }
     } else {
-      const { data: row } = await supabase
-        .from("nasabah").insert({ ...payload, total_iuran: 0 })
-        .select("id, nama, rw, rt, email, hp, alamat, total_iuran, status_aktif, bergabung_tanggal").single();
+      const { data: row, error } = await createNasabah(payload);
       if (row) setData((prev) => [...prev, row]);
+      else if (error) { setLoadError(error); setSaving(false); return; }
     }
     setSaving(false);
     setShowModal(false);
   }
 
   async function handleDelete(id: string) {
-    const supabase = createClient();
-    await supabase.from("nasabah").delete().eq("id", id);
+    const { error } = await deleteNasabah(id);
+    if (error) { setLoadError(error); setDeleteConfirm(null); return; }
     setData((prev) => prev.filter((m) => m.id !== id));
     setDeleteConfirm(null);
   }
@@ -145,6 +135,13 @@ export default function NasabahPage() {
           <Plus className="w-4 h-4" /> Tambah Nasabah
         </button>
       </div>
+
+      {loadError && (
+        <div className="flex items-start gap-2 bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl px-4 py-3">
+          <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
+          <span>Gagal memuat data: {loadError}</span>
+        </div>
+      )}
 
       {/* Summary */}
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
