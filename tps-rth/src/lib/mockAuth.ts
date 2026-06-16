@@ -15,6 +15,35 @@ export interface SessionUser {
   role: "admin" | "manager" | "manajer" | "petugas" | "user";
 }
 
+// ─── Avatar localStorage helpers ─────────────────────────────────────────────
+// Avatar is stored in localStorage (not auth metadata) to keep session
+// cookies small and avoid HTTP 431 "Request Header Fields Too Large".
+
+function avatarKey(userId: string) {
+  return `tps_avatar_${userId}`;
+}
+
+function readLocalAvatar(userId: string): string | undefined {
+  if (typeof window === "undefined") return undefined;
+  try {
+    return localStorage.getItem(avatarKey(userId)) ?? undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function writeLocalAvatar(userId: string, value: string | null) {
+  if (typeof window === "undefined") return;
+  try {
+    if (value) localStorage.setItem(avatarKey(userId), value);
+    else localStorage.removeItem(avatarKey(userId));
+  } catch {
+    // QuotaExceededError — silently ignore
+  }
+}
+
+// ─── Core helpers ─────────────────────────────────────────────────────────────
+
 function toSessionUser(user: User): SessionUser {
   const meta = user.user_metadata ?? {};
   return {
@@ -26,17 +55,24 @@ function toSessionUser(user: User): SessionUser {
     hp: meta.hp ?? "",
     alamat: meta.alamat ?? "",
     jabatan: meta.jabatan,
-    avatar_url: meta.avatar_url,
+    // avatar_url is intentionally NOT read from auth metadata here;
+    // it is merged from localStorage in getSession() to keep cookies small.
     createdAt: meta.createdAt ?? user.created_at ?? "",
     role: meta.role ?? "user",
   };
 }
 
+// ─── Public API ───────────────────────────────────────────────────────────────
+
 export async function getSession(): Promise<SessionUser | null> {
   const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
-  return toSessionUser(user);
+  const session = toSessionUser(user);
+  // Merge avatar from localStorage (source of truth)
+  const localAvatar = readLocalAvatar(session.id);
+  if (localAvatar) session.avatar_url = localAvatar;
+  return session;
 }
 
 export async function clearSession(): Promise<void> {
@@ -51,7 +87,21 @@ export async function signIn(
   const supabase = createClient();
   const { data, error } = await supabase.auth.signInWithPassword({ email, password });
   if (error || !data.user) return { user: null, error: error?.message };
-  return { user: toSessionUser(data.user) };
+
+  const user = toSessionUser(data.user);
+
+  // Migrate any old large base64 avatar from auth metadata → localStorage,
+  // then clear it from auth metadata so the session cookie stays small.
+  const rawAvatar = data.user.user_metadata?.avatar_url as string | undefined;
+  if (rawAvatar && rawAvatar.startsWith("data:")) {
+    writeLocalAvatar(user.id, rawAvatar);
+    user.avatar_url = rawAvatar;
+    await supabase.auth.updateUser({ data: { avatar_url: null } });
+  } else {
+    user.avatar_url = readLocalAvatar(user.id);
+  }
+
+  return { user };
 }
 
 export async function signUp(data: {
@@ -122,9 +172,26 @@ export async function updateProfile(data: {
   avatar_url?: string;
 }): Promise<{ user?: SessionUser; error?: string }> {
   const supabase = createClient();
-  const { data: result, error } = await supabase.auth.updateUser({ data });
+
+  // Strip avatar_url from auth metadata update — always force it null to
+  // clear any old large base64 that may still be in the user record.
+  const { avatar_url, ...metaData } = data;
+  const { data: result, error } = await supabase.auth.updateUser({
+    data: { ...metaData, avatar_url: null },
+  });
   if (error || !result.user) return { error: error?.message ?? "Update gagal" };
-  return { user: toSessionUser(result.user) };
+
+  const user = toSessionUser(result.user);
+
+  // Persist avatar to localStorage and reflect in returned user
+  if (avatar_url !== undefined) {
+    writeLocalAvatar(user.id, avatar_url || null);
+    user.avatar_url = avatar_url || undefined;
+  } else {
+    user.avatar_url = readLocalAvatar(user.id);
+  }
+
+  return { user };
 }
 
 export async function updatePassword(

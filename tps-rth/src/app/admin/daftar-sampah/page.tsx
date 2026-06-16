@@ -4,20 +4,19 @@ import { useState, useEffect } from "react";
 import { Plus, Pencil, Trash2, X, Check, Leaf } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
 
-type JenisSampah = { id: string; nama: string; kategori: string };
+type JenisSampah = { id: string; nama: string; kategori: string; contoh_barang: string | null; catatan: string | null };
 
-const KATEGORI_OPTIONS = ["Plastik", "Kertas", "Logam", "Kaca", "Organik", "Lainnya"];
+const KATEGORI_OPTIONS = ["Plastik", "Kertas/Kardus", "Logam", "Kaca", "Non-daur ulang"];
 
 const KATEGORI_STYLE: Record<string, string> = {
-  Plastik:  "bg-blue-50 text-blue-700 border-blue-100",
-  Kertas:   "bg-amber-50 text-amber-700 border-amber-100",
-  Logam:    "bg-slate-50 text-slate-600 border-slate-200",
-  Kaca:     "bg-cyan-50 text-cyan-700 border-cyan-100",
-  Organik:  "bg-green-50 text-green-700 border-green-100",
-  Lainnya:  "bg-gray-100 text-gray-600 border-gray-200",
+  Plastik: "bg-blue-50 text-blue-700 border-blue-100",
+  "Kertas/Kardus": "bg-amber-50 text-amber-700 border-amber-100",
+  Logam: "bg-slate-50 text-slate-600 border-slate-200",
+  Kaca: "bg-cyan-50 text-cyan-700 border-cyan-100",
+  "Non-daur ulang": "bg-red-50 text-red-600 border-red-100",
 };
 
-const EMPTY_FORM = { nama: "", kategori: KATEGORI_OPTIONS[0] };
+const EMPTY_FORM = { nama: "", kategori: KATEGORI_OPTIONS[0], contoh_barang: "", catatan: "" };
 
 export default function DaftarSampahPage() {
   const [jenisList, setJenisList] = useState<JenisSampah[]>([]);
@@ -34,7 +33,7 @@ export default function DaftarSampahPage() {
     const supabase = createClient();
     const { data } = await supabase
       .from("jenis_sampah")
-      .select("id, nama, kategori")
+      .select("id, nama, kategori, contoh_barang, catatan")
       .order("kategori")
       .order("nama");
     if (data) setJenisList(data);
@@ -45,7 +44,10 @@ export default function DaftarSampahPage() {
   }
 
   function openEdit(item: JenisSampah) {
-    setEditItem(item); setForm({ nama: item.nama, kategori: item.kategori }); setNameErr(""); setShowModal(true);
+    setEditItem(item);
+    setForm({ nama: item.nama, kategori: item.kategori, contoh_barang: item.contoh_barang ?? "", catatan: item.catatan ?? "" });
+    setNameErr("");
+    setShowModal(true);
   }
 
   async function handleSave(e: React.SyntheticEvent<HTMLFormElement>) {
@@ -53,10 +55,16 @@ export default function DaftarSampahPage() {
     if (!form.nama.trim()) { setNameErr("Nama wajib diisi"); return; }
     setSaving(true);
     const supabase = createClient();
+    const payload = {
+      nama: form.nama.trim(),
+      kategori: form.kategori,
+      contoh_barang: form.contoh_barang.trim(),
+      catatan: form.catatan.trim(),
+    };
     if (editItem) {
       const { data } = await supabase
         .from("jenis_sampah")
-        .update({ nama: form.nama.trim(), kategori: form.kategori })
+        .update(payload)
         .eq("id", editItem.id)
         .select()
         .single();
@@ -64,7 +72,7 @@ export default function DaftarSampahPage() {
     } else {
       const { data } = await supabase
         .from("jenis_sampah")
-        .insert({ nama: form.nama.trim(), kategori: form.kategori })
+        .insert(payload)
         .select()
         .single();
       if (data) setJenisList((prev) => [...prev, data]);
@@ -91,9 +99,10 @@ export default function DaftarSampahPage() {
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-xl font-bold text-gray-900">Daftar Jenis Sampah</h1>
-          <p className="text-sm text-gray-500">{jenisList.length} jenis terdaftar · digunakan petugas saat input data</p>
+          <p className="text-sm text-gray-500">{jenisList.length} jenis terdaftar · standar klasifikasi yang digunakan petugas saat input data</p>
         </div>
         <button
+          type="button"
           onClick={openAdd}
           className="flex items-center gap-2 bg-[#2F855A] text-white text-sm font-semibold px-4 py-2 rounded-xl hover:bg-[#276749] transition-colors"
         >
@@ -102,7 +111,7 @@ export default function DaftarSampahPage() {
       </div>
 
       {/* Summary per kategori */}
-      <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
         {KATEGORI_OPTIONS.map((k) => {
           const count = jenisList.filter((j) => j.kategori === k).length;
           return (
@@ -132,26 +141,34 @@ export default function DaftarSampahPage() {
             </div>
             <div className="divide-y divide-gray-50">
               {items.map((item) => (
-                <div key={item.id} className="flex items-center justify-between px-5 py-3 hover:bg-gray-50 transition-colors">
-                  <div className="flex items-center gap-2">
-                    <Leaf className="w-3.5 h-3.5 text-gray-300" />
-                    <span className="text-sm font-medium text-gray-800">{item.nama}</span>
+                <div key={item.id} className="flex items-start justify-between gap-3 px-5 py-3 hover:bg-gray-50 transition-colors">
+                  <div className="flex items-start gap-2 min-w-0">
+                    <Leaf className="w-3.5 h-3.5 text-gray-300 mt-0.5 shrink-0" />
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-gray-800">{item.nama}</p>
+                      {item.contoh_barang && (
+                        <p className="text-xs text-gray-400 mt-0.5">{item.contoh_barang}</p>
+                      )}
+                      {item.catatan && (
+                        <p className="text-[11px] text-gray-300 italic mt-0.5">Catatan: {item.catatan}</p>
+                      )}
+                    </div>
                   </div>
-                  <div className="flex items-center gap-1">
-                    <button onClick={() => openEdit(item)} className="p-1.5 text-gray-400 hover:text-[#2F855A] hover:bg-green-50 rounded-lg transition-colors">
+                  <div className="flex items-center gap-1 shrink-0">
+                    <button type="button" onClick={() => openEdit(item)} title="Edit" className="p-1.5 text-gray-400 hover:text-[#2F855A] hover:bg-green-50 rounded-lg transition-colors">
                       <Pencil className="w-3.5 h-3.5" />
                     </button>
                     {deleteConfirm === item.id ? (
                       <>
-                        <button onClick={() => handleDelete(item.id)} className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg">
+                        <button type="button" onClick={() => handleDelete(item.id)} title="Konfirmasi hapus" className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg">
                           <Check className="w-3.5 h-3.5" />
                         </button>
-                        <button onClick={() => setDeleteConfirm(null)} className="p-1.5 text-gray-400 hover:bg-gray-100 rounded-lg">
+                        <button type="button" onClick={() => setDeleteConfirm(null)} title="Batal" className="p-1.5 text-gray-400 hover:bg-gray-100 rounded-lg">
                           <X className="w-3.5 h-3.5" />
                         </button>
                       </>
                     ) : (
-                      <button onClick={() => setDeleteConfirm(item.id)} className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors">
+                      <button type="button" onClick={() => setDeleteConfirm(item.id)} title="Hapus" className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors">
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     )}
@@ -169,7 +186,7 @@ export default function DaftarSampahPage() {
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm">
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
               <h2 className="font-semibold text-gray-900">{editItem ? "Edit Jenis Sampah" : "Tambah Jenis Sampah"}</h2>
-              <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>
+              <button type="button" onClick={() => setShowModal(false)} title="Tutup" className="text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>
             </div>
             <form onSubmit={handleSave} className="p-6 space-y-4">
               <div>
@@ -177,7 +194,7 @@ export default function DaftarSampahPage() {
                 <input
                   value={form.nama}
                   onChange={(e) => { setForm({ ...form, nama: e.target.value }); setNameErr(""); }}
-                  placeholder="Contoh: Plastik PET"
+                  placeholder="Contoh: PETE / PET (1)"
                   autoFocus
                   className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#2F855A] ${nameErr ? "border-red-300 bg-red-50" : "border-gray-200"}`}
                 />
@@ -188,10 +205,32 @@ export default function DaftarSampahPage() {
                 <select
                   value={form.kategori}
                   onChange={(e) => setForm({ ...form, kategori: e.target.value })}
+                  aria-label="Kategori jenis sampah"
+                  title="Kategori"
                   className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#2F855A]"
                 >
                   {KATEGORI_OPTIONS.map((k) => <option key={k}>{k}</option>)}
                 </select>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">Contoh Barang</label>
+                <textarea
+                  value={form.contoh_barang}
+                  onChange={(e) => setForm({ ...form, contoh_barang: e.target.value })}
+                  placeholder="Contoh: Botol air mineral, botol minuman soda, dst."
+                  rows={3}
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#2F855A] resize-none"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">Catatan Tambahan</label>
+                <textarea
+                  value={form.catatan}
+                  onChange={(e) => setForm({ ...form, catatan: e.target.value })}
+                  placeholder="Catatan tambahan, misal kode jenis teknis"
+                  rows={2}
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#2F855A] resize-none"
+                />
               </div>
               <div className="flex gap-3 pt-1">
                 <button type="button" onClick={() => setShowModal(false)} className="flex-1 border border-gray-200 text-gray-600 text-sm font-semibold py-2.5 rounded-xl hover:bg-gray-50">Batal</button>
