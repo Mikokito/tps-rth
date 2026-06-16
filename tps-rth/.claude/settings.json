@@ -5,7 +5,13 @@
       "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:3000/admin/iuran)",
       "Bash(curl -s http://localhost:3000/admin/iuran -o /tmp/out.html)",
       "Read(//tmp/**)",
-      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:3000/admin/dashboard)"
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:3000/admin/dashboard)",
+      "Bash(rm -f src/app/admin/laporan/page.tsx)",
+      "Bash(rmdir src/app/admin/laporan)",
+      "Bash(echo \"exit:$?\")",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:3000/admin/pesan)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:3000/admin/laporan)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:3000/kontak)"
     ]
   }
 }

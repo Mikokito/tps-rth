@@ -5,7 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   Leaf, LayoutDashboard, Trash2, Users, UserCheck,
-  List, Newspaper, FileText, CalendarCheck, CalendarRange,
+  List, Newspaper, MessageSquare, CalendarCheck, CalendarRange,
   Menu, X, LogOut, ChevronRight, Banknote, Home, Bell,
 } from "lucide-react";
 import { getSession, clearSession, type SessionUser } from "@/lib/mockAuth";
@@ -20,7 +20,7 @@ const navItems = [
   { href: "/admin/nasabah",       label: "Nasabah",         icon: UserCheck },
   { href: "/admin/iuran",         label: "Iuran",           icon: Banknote },
   { href: "/admin/berita",        label: "Berita",          icon: Newspaper },
-  { href: "/admin/laporan",       label: "Laporan",         icon: FileText },
+  { href: "/admin/pesan",         label: "Pesan Masuk",     icon: MessageSquare },
   { href: "/admin/notifikasi",    label: "Notifikasi",      icon: Bell },
 ];
 

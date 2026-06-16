@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { MapPin, Phone, Mail, MessageSquare, Send, CheckCircle, Loader2 } from "lucide-react";
+import { MapPin, Phone, Mail, MessageSquare, Send, CheckCircle, Loader2, User, Tag, Home } from "lucide-react";
 import { tpsInfo } from "@/data/tps";
 import { createClient } from "@/utils/supabase/client";
 
@@ -17,9 +17,11 @@ function RequiredMark() {
 
 export default function KontakPage() {
   const [form, setForm] = useState({ nama: "", email: "", whatsapp: "", subjek: "", pesan: "" });
-  const [sent, setSent]       = useState(false);
-  const [sending, setSending] = useState(false);
-  const [error, setError]     = useState("");
+  const [sent, setSent]               = useState(false);
+  const [sending, setSending]         = useState(false);
+  const [error, setError]             = useState("");
+  const [formVisible, setFormVisible] = useState(true);
+  const [successVisible, setSuccessVisible] = useState(false);
 
   async function handleSubmit(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -42,7 +44,20 @@ export default function KontakPage() {
       return;
     }
 
-    setSent(true);
+    setFormVisible(false);
+    setTimeout(() => {
+      setSent(true);
+      setTimeout(() => setSuccessVisible(true), 30);
+    }, 300);
+  }
+
+  function handleSendAnother() {
+    setSuccessVisible(false);
+    setTimeout(() => {
+      setSent(false);
+      setForm({ nama: "", email: "", whatsapp: "", subjek: "", pesan: "" });
+      setTimeout(() => setFormVisible(true), 30);
+    }, 300);
   }
 
   return (
@@ -149,24 +164,64 @@ export default function KontakPage() {
                 Kolom bertanda <span className="text-red-500 font-semibold">*</span> wajib diisi.
               </p>
 
-              <div className="bg-[#FBFAF2] shadow-sm rounded-2xl p-6 border border-[#E6DFAF]">
+              <div className="bg-[#FBFAF2] shadow-sm rounded-2xl p-6 border border-[#E6DFAF] overflow-hidden">
                 {sent ? (
-                  <div className="bg-[#F0FFF4] border border-green-200 rounded-2xl p-8 text-center">
-                    <CheckCircle className="w-12 h-12 text-[#2F855A] mx-auto mb-3" />
-                    <h3 className="font-bold text-gray-900 text-lg mb-2">Pesan Terkirim!</h3>
-                    <p className="text-gray-600 text-sm">
-                      Terima kasih, pesan Anda telah kami terima. Kami akan segera merespons.
+                  <div
+                    className={`relative text-center rounded-2xl border border-green-200 bg-gradient-to-br from-[#F0FFF4] via-white to-[#F0FFF4] px-6 py-10 transition-all duration-500 ease-out ${
+                      successVisible ? "opacity-100 scale-100 translate-y-0" : "opacity-0 scale-95 translate-y-3"
+                    }`}
+                  >
+                    <div className="relative mx-auto mb-5 flex h-20 w-20 items-center justify-center">
+                      <span className="absolute inset-0 rounded-full bg-green-100" />
+                      <span className="absolute inset-1.5 rounded-full bg-green-200/60" />
+                      <span className="relative flex h-14 w-14 items-center justify-center rounded-full bg-[#2F855A] shadow-lg shadow-green-200">
+                        <CheckCircle className="h-8 w-8 text-white" strokeWidth={2.25} />
+                      </span>
+                    </div>
+
+                    <h3 className="font-bold text-gray-900 text-xl mb-2">Pesan Terkirim!</h3>
+                    <p className="text-gray-600 text-sm max-w-sm mx-auto leading-relaxed">
+                      Terima kasih, pesan Anda telah kami terima. Tim kami akan segera merespons.
                     </p>
-                    <button
-                      type="button"
-                      onClick={() => { setSent(false); setForm({ nama: "", email: "", whatsapp: "", subjek: "", pesan: "" }); }}
-                      className="mt-4 text-sm text-[#2F855A] font-semibold hover:underline"
-                    >
-                      Kirim pesan lain
-                    </button>
+
+                    {(form.nama || form.subjek) && (
+                      <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
+                        {form.nama && (
+                          <span className="inline-flex items-center gap-1.5 bg-white border border-green-200 text-gray-700 text-xs font-medium px-3 py-1.5 rounded-full">
+                            <User className="w-3 h-3 text-[#2F855A]" /> {form.nama}
+                          </span>
+                        )}
+                        {form.subjek && (
+                          <span className="inline-flex items-center gap-1.5 bg-white border border-green-200 text-gray-700 text-xs font-medium px-3 py-1.5 rounded-full">
+                            <Tag className="w-3 h-3 text-[#2F855A]" /> {form.subjek}
+                          </span>
+                        )}
+                      </div>
+                    )}
+
+                    <div className="mt-7 flex flex-col sm:flex-row items-center justify-center gap-3">
+                      <button
+                        type="button"
+                        onClick={handleSendAnother}
+                        className="w-full sm:w-auto flex items-center justify-center gap-2 bg-[#2F855A] text-white text-sm font-semibold px-5 py-2.5 rounded-xl hover:bg-[#276749] transition-colors shadow-sm"
+                      >
+                        <Send className="w-3.5 h-3.5" /> Kirim Pesan Lain
+                      </button>
+                      <Link
+                        href="/"
+                        className="w-full sm:w-auto flex items-center justify-center gap-2 text-sm font-semibold text-gray-600 hover:text-[#2F855A] px-5 py-2.5 rounded-xl border border-gray-200 hover:border-[#2F855A]/40 transition-colors"
+                      >
+                        <Home className="w-3.5 h-3.5" /> Kembali ke Beranda
+                      </Link>
+                    </div>
                   </div>
                 ) : (
-                  <form onSubmit={handleSubmit} className="space-y-5">
+                  <form
+                    onSubmit={handleSubmit}
+                    className={`space-y-5 transition-all duration-300 ease-in ${
+                      formVisible ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-2 pointer-events-none"
+                    }`}
+                  >
                     {error && (
                       <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
                         {error}

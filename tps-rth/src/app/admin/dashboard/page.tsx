@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   Trash2, Users, UserCheck, Banknote,
-  Newspaper, FileText, CalendarCheck, AlertTriangle,
+  Newspaper, MessageSquare, CalendarCheck, AlertTriangle,
   Clock, CheckCircle2, Award,
 } from "lucide-react";
 import { getAdminDashboardData, type PetugasPerforma } from "@/app/actions/dashboard";
@@ -15,7 +15,7 @@ const quickLinks = [
   { href: "/admin/nasabah",      label: "Data Nasabah",    icon: UserCheck,     desc: "Lihat & filter" },
   { href: "/admin/iuran",        label: "Iuran",           icon: Banknote,      desc: "Verifikasi bukti bayar" },
   { href: "/admin/berita",       label: "Kelola Berita",   icon: Newspaper,     desc: "CRUD artikel" },
-  { href: "/admin/laporan",      label: "Laporan",         icon: FileText,      desc: "Upload / download" },
+  { href: "/admin/pesan",        label: "Pesan Masuk",     icon: MessageSquare, desc: "Lihat pesan dari kontak" },
   { href: "/admin/absen",        label: "Absen Hari Ini",  icon: CalendarCheck, desc: "Catat kehadiran" },
 ];
 
