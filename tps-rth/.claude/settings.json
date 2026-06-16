@@ -11,7 +11,9 @@
       "Bash(echo \"exit:$?\")",
       "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:3000/admin/pesan)",
       "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:3000/admin/laporan)",
-      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:3000/kontak)"
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:3000/kontak)",
+      "Bash(curl -Ls -o /dev/null -w '%{url_effective}\\\\n' \"https://maps.app.goo.gl/PYY1UhcBpTr9mngRA\")",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" \"https://www.openstreetmap.org/export/embed.html?bbox=106.6242949%2C-6.3071073%2C106.6342949%2C-6.2971073&layer=mapnik&marker=-6.3021073%2C106.6292949\")"
     ]
   }
 }

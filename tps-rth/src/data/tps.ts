@@ -6,6 +6,7 @@ export const tpsInfo = {
   city: "Kota Bogor",
   province: "Jawa Barat",
   postalCode: "16132",
+  coordinates: { lat: -6.3021073, lon: 106.6292949 },
   capacity: "2 ton/hari",
   status: "Aktif",
   established: "2019",

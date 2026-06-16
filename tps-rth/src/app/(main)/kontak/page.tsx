@@ -139,20 +139,28 @@ export default function KontakPage() {
                 </div>
               </div>
 
-              {/* Location map placeholder */}
+              {/* Location map (OpenStreetMap embed) */}
               <div>
                 <h3 className="text-lg font-bold text-gray-900 mb-4">Lokasi</h3>
-                <div className="bg-gray-100 rounded-2xl h-48 flex flex-col items-center justify-center text-gray-400 border border-gray-200">
-                  <MapPin className="w-8 h-8 mb-2" />
-                  <p className="text-sm font-medium">Peta Lokasi TPS RTH Cikaret</p>
-                  <a
-                    href="https://maps.google.com/?q=Cikaret,Bogor"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="mt-2 text-xs text-[#2F855A] hover:underline font-semibold"
-                  >
-                    Buka di Google Maps →
-                  </a>
+                <div className="rounded-2xl overflow-hidden border border-gray-200 shadow-sm">
+                  <iframe
+                    title="Peta Lokasi TPS RTH Cikaret"
+                    width="100%"
+                    height="220"
+                    className="border-0"
+                    loading="lazy"
+                    src={`https://www.openstreetmap.org/export/embed.html?bbox=${tpsInfo.coordinates.lon - 0.005}%2C${tpsInfo.coordinates.lat - 0.005}%2C${tpsInfo.coordinates.lon + 0.005}%2C${tpsInfo.coordinates.lat + 0.005}&layer=mapnik&marker=${tpsInfo.coordinates.lat}%2C${tpsInfo.coordinates.lon}`}
+                  />
+                  <div className="bg-white px-4 py-2.5 text-center">
+                    <a
+                      href={`https://www.openstreetmap.org/?mlat=${tpsInfo.coordinates.lat}&mlon=${tpsInfo.coordinates.lon}#map=17/${tpsInfo.coordinates.lat}/${tpsInfo.coordinates.lon}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs text-[#2F855A] hover:underline font-semibold"
+                    >
+                      Buka di OpenStreetMap →
+                    </a>
+                  </div>
                 </div>
               </div>
             </div>
