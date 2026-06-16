@@ -89,7 +89,7 @@ export default function IzinCutiAdminPage() {
           .order("submitted_at", { ascending: false });
 
         if (error) console.error("izin_cuti load error:", error.message);
-        if (data) setRows(data as IzinRow[]);
+        if (data) setRows(data as unknown as IzinRow[]);
       } catch (err) {
         console.error("load error:", err);
       } finally {

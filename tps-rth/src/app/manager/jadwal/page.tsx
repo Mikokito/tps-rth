@@ -105,7 +105,7 @@ export default function ManagerJadwalPage() {
             .order("tanggal").order("jam_mulai"),
         ]);
         if (staffData) setStaffList(staffData);
-        if (jadwalData) setJadwalList(jadwalData as JadwalRow[]);
+        if (jadwalData) setJadwalList(jadwalData as unknown as JadwalRow[]);
       } catch (err) {
         console.error("Gagal memuat jadwal:", err);
       } finally {
