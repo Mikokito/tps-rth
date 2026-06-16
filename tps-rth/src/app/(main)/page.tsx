@@ -152,12 +152,11 @@ export default async function HomePage() {
                 Pelajari lebih lanjut <ArrowRight className="w-4 h-4" />
               </Link>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-3 gap-4">
               {[
                 { emoji: "♻️", title: "Reduce", desc: "Kurangi produksi sampah dari sumbernya" },
                 { emoji: "🔄", title: "Reuse", desc: "Manfaatkan kembali barang yang masih layak" },
                 { emoji: "🌱", title: "Recycle", desc: "Daur ulang sampah menjadi produk baru" },
-                { emoji: "💰", title: "Nilai Ekonomis", desc: "Sampah terpilah menghasilkan pendapatan" },
               ].map((item) => (
                 <div key={item.title} className="bg-[#FBFAF2] rounded-2xl p-5 border border-[#E6DFAF] shadow-sm">
                   <div className="text-3xl mb-3">{item.emoji}</div>
