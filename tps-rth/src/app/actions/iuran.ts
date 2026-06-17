@@ -1,6 +1,7 @@
 "use server";
 
 import { createAdminClient } from "@/utils/supabase/admin";
+import { uploadBuktiToStorage } from "@/lib/storage";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 export type IuranStatus = "menunggu" | "diverifikasi" | "ditolak";
@@ -95,6 +96,14 @@ export async function submitIuran(input: {
     .maybeSingle();
   if (dup) return { error: "Iuran bulan ini sudah pernah diajukan" };
 
+  const storagePath = `iuran/${nasabahId}/${input.tahun}-${String(input.bulan).padStart(2, "0")}-${Date.now()}`;
+  let fotoUrl: string;
+  try {
+    fotoUrl = await uploadBuktiToStorage(storagePath, input.fotoDataUrl);
+  } catch (err) {
+    return { error: (err as Error).message };
+  }
+
   const { data, error } = await supabase
     .from("iuran")
     .insert({
@@ -106,7 +115,7 @@ export async function submitIuran(input: {
       status: "menunggu",
       submitted_at: new Date().toISOString(),
       foto_nama: input.fotoNama,
-      foto_data_url: input.fotoDataUrl,
+      foto_data_url: fotoUrl,
       harga_iuran: input.jumlah,
     })
     .select(IURAN_SELECT)

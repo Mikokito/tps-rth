@@ -560,7 +560,7 @@ export default function PengurusPage() {
                   <div className="border border-gray-200 rounded-xl divide-y divide-gray-50 max-h-56 overflow-y-auto">
                     {gajiHistory.map((g) => (
                       <div key={g.id} className="flex items-center gap-3 px-4 py-3">
-                        {g.foto_data_url && g.foto_data_url.startsWith("data:image") ? (
+                        {g.foto_data_url ? (
                           <img src={g.foto_data_url} alt="bukti gaji" onClick={() => setLightboxUrl(g.foto_data_url)} className="w-12 h-12 rounded-lg object-cover border border-gray-100 shrink-0 cursor-pointer hover:opacity-80 transition-opacity" />
                         ) : (
                           <div className="w-12 h-12 rounded-lg bg-gray-50 border border-gray-100 flex items-center justify-center shrink-0">

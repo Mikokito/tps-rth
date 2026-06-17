@@ -218,7 +218,7 @@ export default function UserIuranPage() {
                       {STATUS_LABEL_MAP[sub.status]}
                     </span>
                   </div>
-                  {sub.foto_data_url && sub.foto_data_url.startsWith("data:image") && (
+                  {sub.foto_data_url && (
                     <img src={sub.foto_data_url} alt="bukti" className="mt-2 h-24 rounded-lg object-cover border border-gray-100" />
                   )}
                 </div>

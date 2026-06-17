@@ -1,6 +1,7 @@
 "use server";
 
 import { createAdminClient } from "@/utils/supabase/admin";
+import { uploadBuktiToStorage } from "@/lib/storage";
 
 export type GajiEntry = {
   id: string;
@@ -37,6 +38,14 @@ export async function uploadGajiBukti(input: {
   fotoNama: string;
   fotoDataUrl: string;
 }): Promise<{ data?: GajiEntry; error?: string }> {
+  const storagePath = `gaji/${input.staffId}/${input.tahun}-${String(input.bulan).padStart(2, "0")}-${Date.now()}`;
+  let fotoUrl: string;
+  try {
+    fotoUrl = await uploadBuktiToStorage(storagePath, input.fotoDataUrl);
+  } catch (err) {
+    return { error: (err as Error).message };
+  }
+
   const supabase = createAdminClient();
   const { data, error } = await supabase
     .from("gaji_staff")
@@ -49,7 +58,7 @@ export async function uploadGajiBukti(input: {
         jumlah: input.jumlah,
         gaji_pokok: input.gajiPokok,
         foto_nama: input.fotoNama,
-        foto_data_url: input.fotoDataUrl,
+        foto_data_url: fotoUrl,
       },
       { onConflict: "staff_id,bulan,tahun" },
     )

@@ -91,7 +91,7 @@ export default function SignupPage() {
       {/* Full-page background */}
       <img
         src="/webp/RTH.jpg"
-        alt="TPS RTH"
+        alt="TPST-3R RTH PBPA"
         className="absolute inset-0 object-cover w-full h-full"
       />
       {/* Dark overlay 70% */}
@@ -107,8 +107,8 @@ export default function SignupPage() {
                 <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-3">
                   <Leaf className="w-6 h-6" />
                 </div>
-                <h1 className="text-xl font-bold">Daftar Anggota TPS RTH</h1>
-                <p className="text-green-200 text-sm mt-1">Mari bergabung menjadi keanggotaan TPS</p>
+                <h1 className="text-xl font-bold">Daftar Anggota TPST-3R RTH PBPA</h1>
+                <p className="text-green-200 text-sm mt-1">Mari bergabung menjadi keanggotaan TPST-3R RTH PBPA</p>
               </div>
 
               {/* Form */}

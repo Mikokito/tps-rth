@@ -172,7 +172,7 @@ export default function PetugasSampahPage() {
   const listToShow = tab === "hari_ini" ? todayEntries : historyFiltered;
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-5 max-w-2xl">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
@@ -413,7 +413,7 @@ export default function PetugasSampahPage() {
 
       {/* Modal form */}
       {showForm && (
-        <div className="fixed inset-0 bg-black/40 z-50 flex items-end sm:items-center justify-center sm:p-4">
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-end sm:items-center justify-center pb-4 sm:p-4">
           <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-xl w-full sm:max-w-md max-h-[92vh] flex flex-col">
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 shrink-0">
               <h2 className="font-semibold text-gray-900">Tambah Data Sampah</h2>

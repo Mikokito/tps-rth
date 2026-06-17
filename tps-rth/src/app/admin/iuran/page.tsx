@@ -216,7 +216,7 @@ export default function AdminIuranPage() {
                     {p.foto_nama ? (
                       <button type="button" onClick={() => setFotoModal(p)}
                         className="inline-flex flex-col items-center gap-1 group">
-                        {p.foto_data_url && p.foto_data_url.startsWith("data:image") ? (
+                        {p.foto_data_url ? (
                           <img src={p.foto_data_url} alt="bukti" className="w-12 h-12 object-cover rounded-lg border border-gray-200 group-hover:border-[#2F855A] transition-colors" />
                         ) : (
                           <div className="w-12 h-12 rounded-lg border-2 border-dashed border-gray-200 bg-gray-50 flex items-center justify-center group-hover:border-[#2F855A]/50 group-hover:bg-green-50 transition-colors">
@@ -276,7 +276,7 @@ export default function AdminIuranPage() {
               <div className="flex items-start gap-3">
                 {p.foto_nama ? (
                   <button type="button" onClick={() => setFotoModal(p)} className="shrink-0">
-                    {p.foto_data_url && p.foto_data_url.startsWith("data:image") ? (
+                    {p.foto_data_url ? (
                       <img src={p.foto_data_url} alt="bukti" className="w-14 h-14 object-cover rounded-xl border border-gray-200" />
                     ) : (
                       <div className="w-14 h-14 rounded-xl border-2 border-dashed border-gray-200 bg-gray-50 flex items-center justify-center">
@@ -335,7 +335,7 @@ export default function AdminIuranPage() {
                 <X className="w-5 h-5" />
               </button>
             </div>
-            {fotoModal.foto_data_url && fotoModal.foto_data_url.startsWith("data:image") ? (
+            {fotoModal.foto_data_url ? (
               <img src={fotoModal.foto_data_url} alt="bukti" className="w-full max-h-96 object-contain bg-gray-50" />
             ) : (
               <div className="p-8 text-center text-gray-400">

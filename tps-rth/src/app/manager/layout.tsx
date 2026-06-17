@@ -24,18 +24,10 @@ export default function ManagerLayout({ children }: { children: React.ReactNode 
   const pathname = usePathname();
   const [session,     setSession2]    = useState<SessionUser | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [ready,       setReady]       = useState(false);
 
   useEffect(() => {
-    getSession().then((s) => {
-      if (!s || (s.role !== "manager" && s.role !== "manajer")) {
-        router.replace("/login");
-        return;
-      }
-      setSession2(s);
-      setReady(true);
-    });
-  }, [router]);
+    getSession().then((s) => { if (s) setSession2(s); });
+  }, []);
 
   useEffect(() => {
     function refresh() {
@@ -48,20 +40,6 @@ export default function ManagerLayout({ children }: { children: React.ReactNode 
   async function handleLogout() {
     await clearSession();
     router.push("/login");
-  }
-
-  if (!ready) {
-    return (
-      <div className="flex h-screen items-center justify-center bg-gray-50">
-        <div className="flex items-center gap-3 text-gray-500">
-          <svg className="animate-spin w-5 h-5" viewBox="0 0 24 24" fill="none">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
-          </svg>
-          Memeriksa akses...
-        </div>
-      </div>
-    );
   }
 
   return (
@@ -86,7 +64,7 @@ export default function ManagerLayout({ children }: { children: React.ReactNode 
             <Leaf className="w-4 h-4 text-white" />
           </div>
           <div className="leading-tight">
-            <span className="font-bold text-sm block">TPS Sukabumi</span>
+            <span className="font-bold text-sm block">TPST PBPA</span>
             <span className="text-[10px] text-green-300/70">Dashboard Manajer</span>
           </div>
         </div>

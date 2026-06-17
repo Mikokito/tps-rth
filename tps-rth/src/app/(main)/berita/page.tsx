@@ -6,7 +6,7 @@ import BeritaList from "./BeritaList";
 
 export const metadata: Metadata = {
   title: "Berita & Pengumuman",
-  description: "Informasi terkini, pengumuman, dan artikel edukasi dari TPS RTH Cikaret.",
+  description: "Informasi terkini, pengumuman, dan artikel edukasi dari TPST-3R RTH PBPA.",
 };
 
 export default async function BeritaPage() {
@@ -31,7 +31,7 @@ export default async function BeritaPage() {
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <h1 className="text-3xl md:text-4xl font-bold mb-3 [text-shadow:0_2px_8px_rgba(0,0,0,0.8)]">Berita &amp; Pengumuman</h1>
           <p className="text-white font-medium max-w-xl leading-relaxed [text-shadow:0_1px_6px_rgba(0,0,0,0.9)]">
-            Informasi terkini, pengumuman, dan artikel edukasi seputar pengelolaan sampah dari TPS RTH Cikaret.
+            Informasi terkini, pengumuman, dan artikel edukasi seputar pengelolaan sampah dari TPST-3R RTH PBPA.
           </p>
         </div>
       </section>

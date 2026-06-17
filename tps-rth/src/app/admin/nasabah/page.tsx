@@ -127,13 +127,6 @@ export default function NasabahPage() {
           <h1 className="text-xl font-bold text-gray-900">Data Nasabah</h1>
           <p className="text-sm text-gray-500">{data.length} nasabah terdaftar</p>
         </div>
-        <button
-          type="button"
-          onClick={openAdd}
-          className="flex items-center gap-2 bg-[#2F855A] text-white text-sm font-semibold px-4 py-2 rounded-xl hover:bg-[#276749] transition-colors"
-        >
-          <Plus className="w-4 h-4" /> Tambah Nasabah
-        </button>
       </div>
 
       {loadError && (

@@ -47,7 +47,7 @@ export default async function HomePage() {
                 <span className="text-[#9AE6B4]">Dapat Manfaat</span>
               </h1>
               <p className="text-lg text-green-100 leading-relaxed mb-8 max-w-xl">
-                TPS RTH Cikaret hadir sebagai solusi pengelolaan sampah terpadu berbasis komunitas.
+                TPST-3R RTH Paguyuban Bumi Puspiptek Asri hadir sebagai solusi pengelolaan sampah terpadu berbasis komunitas.
                 Pilah sampahmu, setorkan, dan dapatkan nilai ekonomis dari limbah rumah tangga Anda.
               </p>
               <div className="flex flex-wrap gap-3">
@@ -129,7 +129,7 @@ export default async function HomePage() {
                 Tentang Kami
               </span>
               <h2 className="text-3xl font-bold text-gray-900 mt-2 mb-4 leading-tight">
-                Solusi Cerdas Pengelolaan Sampah untuk Kota Bogor
+                Pengelolaan Sampah untuk Kabupaten Tangerang
               </h2>
               <p className="text-gray-600 leading-relaxed mb-4">
                 {tpsInfo.mission}

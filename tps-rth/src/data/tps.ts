@@ -1,18 +1,18 @@
 export const tpsInfo = {
-  name: "TPS RTH Cikaret",
-  fullName: "Tempat Pengelolaan Sampah Ruang Terbuka Hijau Cikaret",
-  address: "Jl. Taman RTH No. 12, Kelurahan Cikaret",
-  district: "Kecamatan Bogor Selatan",
-  city: "Kota Bogor",
-  province: "Jawa Barat",
-  postalCode: "16132",
-  coordinates: { lat: -6.3021073, lon: 106.6292949 },
+  name: "TPST-3R RTH PBPA",
+  fullName: "Tempat Pengelolaan Sampah Terpadu 3R Ruang Terbuka Hijau Paguyuban Bumi Puspiptek Asri",
+  address: "Jl. Raya Bumi Puspiptek Asri",
+  district: "Pagedangan",
+  city: "Kecamatan Tangerang",
+  province: "Banten",
+  postalCode: "15339",
+  coordinates: { lat: -6.30212, lon: 106.62934 },
   capacity: "2 ton/hari",
   status: "Aktif",
-  established: "2019",
+  established: "2025",
   wasteTypes: ["Sampah Organik", "Plastik", "Kertas & Kardus", "Logam & Aluminium", "Kaca", "B3 Rumah Tangga"],
   contact: {
-    phone: "+62 251-8765432",
+    phone: "+62 812-3456-7890",
     whatsapp: "+6281234567890",
     email: "tpsrth.cikaret@gmail.com",
     instagram: "@tpsrth_cikaret",
@@ -32,7 +32,7 @@ export const tpsInfo = {
   mission:
     "Mengelola sampah berbasis komunitas melalui prinsip 3R (Reduce, Reuse, Recycle) demi terwujudnya lingkungan yang bersih, sehat, dan berkelanjutan.",
   vision:
-    "Menjadi pusat pengelolaan sampah terpadu yang mandiri, edukatif, dan menjadi contoh bagi kelurahan lain di Kota Bogor.",
+    "Menjadi pusat pengelolaan sampah terpadu yang mandiri, edukatif, dan menjadi contoh bagi kelurahan lain di Kabupaten Tangerang.",
   organization: [
     { role: "Ketua", name: "Bapak Agus Santoso" },
     { role: "Wakil Ketua", name: "Ibu Sri Wahyuni" },

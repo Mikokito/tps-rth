@@ -61,7 +61,7 @@ export default function LoginPage() {
       {/* Full-page background */}
       <img
         src="/webp/RTH.jpg"
-        alt="TPS RTH"
+        alt="TPST-3R RTH PBPA"
         className="absolute inset-0 object-cover w-full h-full"
       />
       {/* Dark overlay 70% */}
@@ -81,7 +81,7 @@ export default function LoginPage() {
             <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-3">
               <Leaf className="w-6 h-6" />
             </div>
-            <h1 className="text-xl font-bold">Masuk ke TPS RTH</h1>
+            <h1 className="text-xl font-bold">Masuk ke TPST-3R RTH PBPA</h1>
             <p className="text-green-200 text-sm mt-1">Selamat datang kembali!</p>
           </div>
 

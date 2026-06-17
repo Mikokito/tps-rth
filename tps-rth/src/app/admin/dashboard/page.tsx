@@ -1,13 +1,11 @@
-"use client";
-
-import { useEffect, useState } from "react";
 import Link from "next/link";
+import { unstable_cache } from "next/cache";
 import {
   Trash2, Users, UserCheck, Banknote,
   Newspaper, MessageSquare, CalendarCheck, AlertTriangle,
   Clock, CheckCircle2, Award,
 } from "lucide-react";
-import { getAdminDashboardData, type PetugasPerforma } from "@/app/actions/dashboard";
+import { getAdminDashboardData } from "@/app/actions/dashboard";
 
 const quickLinks = [
   { href: "/admin/sampah",   label: "Input Sampah",   icon: Trash2,        desc: "Catat setoran baru" },
@@ -25,37 +23,23 @@ function performaBarColor(persen: number): string {
   return "#ef4444";
 }
 
-export default function DashboardPage() {
-  const [totalNasabah, setTotalNasabah] = useState(0);
-  const [nasabahAktif, setNasabahAktif] = useState(0);
-  const [totalPetugas, setTotalPetugas] = useState(0);
-  const [totalSampahKg, setTotalSampahKg] = useState(0);
-  const [iuranPending, setIuranPending] = useState(0);
-  const [iuranSukses, setIuranSukses] = useState(0);
-  const [petugasPerforma, setPetugasPerforma] = useState<PetugasPerforma[]>([]);
-  const [loadError, setLoadError] = useState<string | undefined>();
-  const [ready, setReady] = useState(false);
+// Cache dashboard data for 60 seconds — aggregate stats, acceptable staleness
+const getCachedDashboard = unstable_cache(
+  getAdminDashboardData,
+  ["admin-dashboard"],
+  { revalidate: 60 },
+);
 
-  useEffect(() => {
-    async function load() {
-      const data = await getAdminDashboardData();
-      setTotalNasabah(data.totalNasabah);
-      setNasabahAktif(data.nasabahAktif);
-      setTotalPetugas(data.totalPetugas);
-      setTotalSampahKg(data.totalSampahKg);
-      setIuranPending(data.iuranPending);
-      setIuranSukses(data.iuranSukses);
-      setPetugasPerforma(data.petugasPerforma);
-      setLoadError(data.error);
-      setReady(true);
-    }
-    load();
-  }, []);
+export default async function DashboardPage() {
+  const {
+    totalNasabah, nasabahAktif, totalPetugas, totalSampahKg,
+    iuranPending, iuranSukses, petugasPerforma, error,
+  } = await getCachedDashboard();
 
   const statCards = [
-    { label: "Total Nasabah", value: totalNasabah.toString(),          sub: `${nasabahAktif} aktif`,  icon: UserCheck, color: "bg-blue-50 text-blue-600",   href: "/admin/nasabah" },
-    { label: "Total Petugas", value: totalPetugas.toString(),          sub: "akun bertugas",           icon: Users,     color: "bg-purple-50 text-purple-600", href: "/admin/petugas" },
-    { label: "Total Sampah",  value: `${totalSampahKg.toFixed(1)} kg`, sub: "seluruh setoran",         icon: Trash2,    color: "bg-green-50 text-green-600",   href: "/admin/sampah"  },
+    { label: "Total Nasabah", value: totalNasabah.toString(),           sub: `${nasabahAktif} aktif`, icon: UserCheck, color: "bg-blue-50 text-blue-600",   href: "/admin/nasabah" },
+    { label: "Total Petugas", value: totalPetugas.toString(),           sub: "akun bertugas",          icon: Users,     color: "bg-purple-50 text-purple-600", href: "/admin/petugas" },
+    { label: "Total Sampah",  value: `${totalSampahKg.toFixed(1)} kg`,  sub: "seluruh setoran",        icon: Trash2,    color: "bg-green-50 text-green-600",   href: "/admin/sampah"  },
   ];
 
   return (
@@ -65,10 +49,10 @@ export default function DashboardPage() {
         <p className="text-sm text-gray-500 mt-0.5">Ringkasan aktivitas TPS RTH Cikaret</p>
       </div>
 
-      {loadError && (
+      {error && (
         <div className="flex items-start gap-2 bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl px-4 py-3">
           <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
-          <span>Gagal memuat data: {loadError}</span>
+          <span>Gagal memuat data: {error}</span>
         </div>
       )}
 
@@ -119,14 +103,12 @@ export default function DashboardPage() {
           <h2 className="text-sm font-semibold text-gray-800">Performa Petugas</h2>
           <span className="text-xs text-gray-400 hidden sm:inline">— berdasarkan kehadiran</span>
         </div>
-        {!ready ? (
-          <p className="text-sm text-gray-400">Memuat...</p>
-        ) : petugasPerforma.length === 0 ? (
+        {petugasPerforma.length === 0 ? (
           <p className="text-sm text-gray-400">Belum ada petugas terdaftar.</p>
         ) : (
           <div className="space-y-2">
             {petugasPerforma.map((p) => (
-              <div key={p.nama} className="space-y-1 sm:space-y-0 sm:flex sm:items-center sm:gap-3">
+              <div key={p.nama} className="space-y-1.5 sm:space-y-0 sm:flex sm:items-center sm:gap-3">
                 <div className="flex items-center justify-between sm:block sm:w-32 sm:shrink-0">
                   <div className="min-w-0">
                     <p className="text-xs font-medium text-gray-700 truncate">{p.nama}</p>
@@ -153,13 +135,13 @@ export default function DashboardPage() {
       <div className="bg-white rounded-xl px-4 py-3 sm:p-5 shadow-sm border border-gray-100">
         <h2 className="text-sm font-semibold text-gray-800 mb-3">Akses Cepat</h2>
 
-        {/* Mobile: compact icon row */}
+        {/* Mobile: compact icon grid */}
         <div className="grid grid-cols-4 gap-2 sm:hidden">
           {quickLinks.map(({ href, label, icon: Icon }) => (
             <Link key={href} href={href}
               className="flex flex-col items-center gap-1.5 p-2 rounded-xl border border-gray-100 hover:border-[#2F855A] hover:bg-[#F0FFF4] transition-colors">
               <div className="w-9 h-9 bg-[#F0FFF4] rounded-lg flex items-center justify-center">
-                <Icon className="w-4.5 h-4.5 text-[#2F855A]" />
+                <Icon className="w-4 h-4 text-[#2F855A]" />
               </div>
               <p className="text-[10px] font-semibold text-gray-700 text-center leading-tight">{label}</p>
             </Link>

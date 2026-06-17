@@ -40,7 +40,7 @@ export default function Header() {
               <Leaf className="w-5 h-5 text-white" />
             </div>
             <div className="leading-tight">
-              <span className="font-bold text-lg text-[#2F855A] block leading-none">TPS RTH</span>
+              <span className="font-bold text-lg text-[#2F855A] block leading-none">TPST-3R RTH PBPA</span>
               <span className="text-[10px] text-gray-500 leading-none">Pengelolaan Sampah 3R</span>
             </div>
           </Link>

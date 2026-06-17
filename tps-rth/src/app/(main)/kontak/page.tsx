@@ -72,7 +72,7 @@ export default function KontakPage() {
           </div>
           <h1 className="text-3xl md:text-4xl font-bold mb-3">Hubungi Kami</h1>
           <p className="text-green-100 max-w-xl leading-relaxed">
-            Ada pertanyaan, saran, atau ingin mengetahui lebih lanjut tentang TPS RTH Cikaret? Kami siap membantu Anda.
+            Ada pertanyaan, saran, atau ingin mengetahui lebih lanjut tentang TPST-3R RTH PBPA? Kami siap membantu Anda.
           </p>
         </div>
       </section>
@@ -144,7 +144,7 @@ export default function KontakPage() {
                 <h3 className="text-lg font-bold text-gray-900 mb-4">Lokasi</h3>
                 <div className="rounded-2xl overflow-hidden border border-gray-200 shadow-sm">
                   <iframe
-                    title="Peta Lokasi TPS RTH Cikaret"
+                    title="Peta Lokasi TPST-3R RTH PBPA"
                     width="100%"
                     height="220"
                     className="border-0"

@@ -5,7 +5,7 @@ import { tpsInfo } from "@/data/tps";
 
 export const metadata: Metadata = {
   title: "Tentang Kami",
-  description: "Informasi lengkap mengenai TPS RTH Cikaret, misi, visi, fasilitas, dan struktur organisasi.",
+  description: "Informasi lengkap mengenai TPST-3R RTH PBPA, misi, visi, fasilitas, dan struktur organisasi.",
 };
 
 const threeR = [
@@ -49,7 +49,7 @@ const threeR = [
     desc: "Proses sampah menjadi bahan baku produk baru yang bernilai ekonomis dan ramah lingkungan.",
     tips: [
       "Pilah sampah organik dan anorganik dari sumbernya",
-      "Setor sampah anorganik ke TPS RTH untuk didaur ulang",
+      "Setor sampah anorganik ke TPST-3R RTH untuk didaur ulang",
       "Olah sampah organik menjadi kompos untuk pupuk tanaman",
       "Buat kerajinan kreatif dari barang-barang bekas daur ulang",
     ],
@@ -67,9 +67,9 @@ export default function TentangPage() {
             <span>/</span>
             <span className="text-white">Tentang Kami</span>
           </div>
-          <h1 className="text-3xl md:text-4xl font-bold mb-3">Tentang TPS RTH Cikaret</h1>
+          <h1 className="text-3xl md:text-4xl font-bold mb-3">Tentang TPST-3R RTH PBPA</h1>
           <p className="text-green-100 max-w-xl leading-relaxed">
-            Mengenal lebih dekat Tempat Pengelolaan Sampah Ruang Terbuka Hijau yang melayani masyarakat Kota Bogor.
+            Mengenal lebih dekat Tempat Pengelolaan Sampah Terpadu 3R Ruang Terbuka Hijau yang melayani masyarakat Kabupaten Tangerang.
           </p>
         </div>
       </section>
@@ -82,7 +82,7 @@ export default function TentangPage() {
             <div>
               <span className="text-sm font-semibold text-[#2F855A] uppercase tracking-wider">Profil Kami</span>
               <h2 className="text-2xl font-bold text-gray-900 mt-2 mb-4">
-                Siapa TPS RTH Cikaret?
+                Siapa TPST-3R RTH PBPA?
               </h2>
               <div className="h-30 rounded-2xl bg-[#092928] mb-4 md:h-30 2xl:h-30">
                 <img
@@ -93,19 +93,18 @@ export default function TentangPage() {
               </div>
               <div className="space-y-4 text-gray-600 leading-relaxed">
                 <p>
-                  <strong className="text-gray-900">TPS RTH Cikaret</strong> adalah Tempat Pengelolaan Sampah
+                  <strong className="text-gray-900">TPST-3R RTH PBPA (Paguyuban Bumi Puspiptek Asri)</strong> adalah Tempat Pengelolaan Sampah
                   berbasis Ruang Terbuka Hijau yang hadir sebagai solusi pengelolaan sampah terpadu di
-                  Kelurahan Cikaret, Kota Bogor. Berdiri sejak tahun {tpsInfo.established}, kami
+                  Kelurahan Pagedangan, Kabupaten Tangerang. Mulai beroperasi lagi di tahun {tpsInfo.established}, kami
                   berkomitmen mewujudkan lingkungan yang bersih dan sehat melalui pendekatan komunitas.
                 </p>
                 <p>
-                  Kami mengelola sampah rumah tangga warga melalui sistem <strong className="text-[#2F855A]">bank
-                  sampah</strong> — warga dapat menabung sampah terpilah dan mendapatkan nilai ekonomis dari
-                  limbah yang selama ini dianggap tidak berguna. Setiap setoran dicatat dan dikonversi menjadi
-                  saldo yang dapat dicairkan secara berkala.
+                  Kami mengelola sampah rumah tangga warga berbasis prinsip <strong className="text-[#2F855A]">3R 
+                  (Reduce, Reuse, Recycle)</strong> — pendekatan strategis untuk memaksimalkan nilai guna sampah
+                  melalui proses pemilahan, pengolahan, dan pemanfaatan kembali sampah secara berkelanjutan. 
                 </p>
                 <p>
-                  Selain pengelolaan fisik sampah, TPS RTH aktif dalam kegiatan edukasi, sosialisasi pemilahan
+                  Selain pengelolaan fisik sampah, TPST-3R RTH aktif dalam kegiatan edukasi, sosialisasi pemilahan
                   sampah, dan pemberdayaan warga sekitar. Kami percaya bahwa perubahan dimulai dari
                   kesadaran komunitas.
                 </p>
@@ -114,11 +113,11 @@ export default function TentangPage() {
 
             {/* Info table */}
             <div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">Informasi TPS</h2>
+              <h2 className="text-2xl font-bold text-gray-900 mb-4">Informasi TPST</h2>
               <div className="bg-[#FBFAF2] rounded-2xl p-6 border border-[#E6DFAF] space-y-0">
                 {[
-                  { label: "Nama TPS", value: tpsInfo.name },
-                  { label: "Berdiri Sejak", value: tpsInfo.established },
+                  { label: "Nama TPST", value: tpsInfo.name },
+                  { label: "Beroperasi Sejak", value: tpsInfo.established },
                   { label: "Alamat", value: tpsInfo.address },
                   { label: "Kabupaten/Provinsi", value: `${tpsInfo.city}, ${tpsInfo.province}` },
                 ].map((item, idx, arr) => (
@@ -166,7 +165,7 @@ export default function TentangPage() {
             <span className="text-sm font-semibold text-[#2F855A] uppercase tracking-wider">Prinsip Kami</span>
             <h2 className="text-3xl font-bold text-gray-900 mt-1">Konsep 3R yang Kami Terapkan</h2>
             <p className="text-gray-500 mt-2 max-w-xl mx-auto text-sm leading-relaxed">
-              Seluruh kegiatan TPS RTH Cikaret berlandaskan pada tiga prinsip dasar pengelolaan sampah
+              Seluruh kegiatan TPST-3R RTH PBPA berlandaskan pada tiga prinsip dasar pengelolaan sampah
               yang berkelanjutan: Reduce, Reuse, dan Recycle.
             </p>
           </div>
