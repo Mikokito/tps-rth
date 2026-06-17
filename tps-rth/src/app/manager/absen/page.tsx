@@ -267,9 +267,18 @@ export default function ManagerAbsenPage() {
               <thead>
                 <tr className="bg-gray-50 border-b border-gray-100">
                   <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Nama</th>
-                  <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Absen Hari Ini</th>
-                  <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Total Kehadiran</th>
-                  <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Status Izin / Cuti</th>
+                  <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                    <span className="sm:hidden">Status</span>
+                    <span className="hidden sm:inline">Absen Hari Ini</span>
+                  </th>
+                  <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                    <span className="sm:hidden">Hadir</span>
+                    <span className="hidden sm:inline">Total Kehadiran</span>
+                  </th>
+                  <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                    <span className="sm:hidden">Izin/Cuti</span>
+                    <span className="hidden sm:inline">Status Izin / Cuti</span>
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
@@ -312,7 +321,7 @@ export default function ManagerAbsenPage() {
                           <span className="text-sm font-semibold text-gray-900">
                             {hadir}
                             <span className="text-gray-400 font-normal">/{total}</span>
-                            <span className="text-xs text-gray-400 font-normal ml-0.5">hari</span>
+                            <span className="hidden sm:inline text-xs text-gray-400 font-normal ml-0.5">hari</span>
                           </span>
                         )}
                       </td>
@@ -330,7 +339,8 @@ export default function ManagerAbsenPage() {
                                   : "bg-orange-50 text-orange-600 border border-orange-100"
                               }`}>
                                 <AlertCircle className="w-3 h-3" />
-                                {iz.jenis === "cuti" ? "Cuti" : "Izin"} {iz.durasi} hari
+                                {iz.jenis === "cuti" ? "Cuti" : "Izin"}
+                                <span className="hidden sm:inline"> {iz.durasi} hari</span>
                               </span>
                             ))}
                           </div>
