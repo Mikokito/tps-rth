@@ -12,6 +12,9 @@ const stats = [
   { label: "Mitra Bank Sampah", value: "5 mitra", icon: Building2, color: "text-amber-600", bg: "bg-amber-50" },
 ];
 
+// Latest berita section is managed live from the admin/manajer dashboards, so always fetch fresh data.
+export const dynamic = "force-dynamic";
+
 export default async function HomePage() {
   const supabase = createAdminClient();
   const { data } = await supabase

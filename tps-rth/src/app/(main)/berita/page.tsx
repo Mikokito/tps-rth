@@ -9,6 +9,9 @@ export const metadata: Metadata = {
   description: "Informasi terkini, pengumuman, dan artikel edukasi dari TPST-3R RTH PBPA.",
 };
 
+// Berita is managed live from the admin/manajer dashboards, so always fetch fresh data.
+export const dynamic = "force-dynamic";
+
 export default async function BeritaPage() {
   const supabase = createAdminClient();
   const { data } = await supabase

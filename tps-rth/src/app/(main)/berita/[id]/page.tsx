@@ -39,6 +39,9 @@ const IMG_CLASS: Record<DisplayMode, string> = {
   stretch: "w-full h-48 rounded-xl object-cover",
 };
 
+// Berita is managed live from the admin/manajer dashboards, so always fetch fresh data.
+export const dynamic = "force-dynamic";
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function parseBlocks(content: string | null): Block[] {
