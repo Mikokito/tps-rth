@@ -1,8 +1,9 @@
 import Link from "next/link";
-import { ArrowRight, Users, Weight, Recycle, Building2, ChevronRight, Leaf } from "lucide-react";
+import { ArrowRight, Users, Weight, Recycle, Building2, Leaf } from "lucide-react";
 import NewsCard from "@/components/NewsCard";
-import { newsData } from "@/data/news";
 import { tpsInfo } from "@/data/tps";
+import { createAdminClient } from "@/utils/supabase/admin";
+import type { NewsItem } from "@/data/news";
 
 const stats = [
   { label: "Nasabah Aktif", value: "1.247+", icon: Users, color: "text-[#2F855A]", bg: "bg-[#F0FFF4]" },
@@ -11,8 +12,17 @@ const stats = [
   { label: "Mitra Bank Sampah", value: "5 mitra", icon: Building2, color: "text-amber-600", bg: "bg-amber-50" },
 ];
 
-export default function HomePage() {
-  const latestNews = newsData.slice(0, 3);
+// Latest berita section is managed live from the admin/manajer dashboards, so always fetch fresh data.
+export const dynamic = "force-dynamic";
+
+export default async function HomePage() {
+  const supabase = createAdminClient();
+  const { data } = await supabase
+    .from("berita")
+    .select("id, title, excerpt, content, category, tanggal, image_url")
+    .order("tanggal", { ascending: false })
+    .limit(3);
+  const latestNews: NewsItem[] = (data as NewsItem[]) ?? [];
 
   return (
     <>
@@ -40,21 +50,15 @@ export default function HomePage() {
                 <span className="text-[#9AE6B4]">Dapat Manfaat</span>
               </h1>
               <p className="text-lg text-green-100 leading-relaxed mb-8 max-w-xl">
-                TPS RTH Cikaret hadir sebagai solusi pengelolaan sampah terpadu berbasis komunitas.
+                TPST-3R RTH Paguyuban Bumi Puspiptek Asri hadir sebagai solusi pengelolaan sampah terpadu berbasis komunitas.
                 Pilah sampahmu, setorkan, dan dapatkan nilai ekonomis dari limbah rumah tangga Anda.
               </p>
               <div className="flex flex-wrap gap-3">
                 <Link
-                  href="/cara-daftar"
+                  href="/signup"
                   className="inline-flex items-center gap-2 bg-white text-[#2F855A] font-semibold px-4 sm:px-6 py-3 rounded-full hover:bg-green-50 transition-colors shadow-lg text-sm sm:text-base"
                 >
                   Daftar Sekarang <ArrowRight className="w-4 h-4" />
-                </Link>
-                <Link
-                  href="/edukasi"
-                  className="inline-flex items-center gap-2 bg-white/20 text-white font-semibold px-4 sm:px-6 py-3 rounded-full hover:bg-white/30 transition-colors border border-white/30 text-sm sm:text-base"
-                >
-                  Tips Pengelolaan Sampah <ChevronRight className="w-4 h-4" />
                 </Link>
               </div>
             </div>
@@ -128,7 +132,7 @@ export default function HomePage() {
                 Tentang Kami
               </span>
               <h2 className="text-3xl font-bold text-gray-900 mt-2 mb-4 leading-tight">
-                Solusi Cerdas Pengelolaan Sampah untuk Kota Bogor
+                Pengelolaan Sampah untuk Kabupaten Tangerang
               </h2>
               <p className="text-gray-600 leading-relaxed mb-4">
                 {tpsInfo.mission}
@@ -151,12 +155,11 @@ export default function HomePage() {
                 Pelajari lebih lanjut <ArrowRight className="w-4 h-4" />
               </Link>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-3 gap-4">
               {[
                 { emoji: "♻️", title: "Reduce", desc: "Kurangi produksi sampah dari sumbernya" },
                 { emoji: "🔄", title: "Reuse", desc: "Manfaatkan kembali barang yang masih layak" },
                 { emoji: "🌱", title: "Recycle", desc: "Daur ulang sampah menjadi produk baru" },
-                { emoji: "💰", title: "Nilai Ekonomis", desc: "Sampah terpilah menghasilkan pendapatan" },
               ].map((item) => (
                 <div key={item.title} className="bg-[#FBFAF2] rounded-2xl p-5 border border-[#E6DFAF] shadow-sm">
                   <div className="text-3xl mb-3">{item.emoji}</div>
@@ -202,31 +205,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* CTA */}
-      <section className="px-4 py-16 bg-[#2F855A]">
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-white">
-          <div className="text-5xl mb-4">🌿</div>
-          <h2 className="text-3xl font-bold mb-4">Bergabunglah Bersama Kami</h2>
-          <p className="text-green-100 leading-relaxed mb-8 max-w-xl mx-auto">
-            Jadilah bagian dari gerakan pengelolaan sampah yang berkelanjutan. Daftarkan diri Anda
-            sebagai nasabah dan mulai berkontribusi untuk lingkungan yang lebih bersih.
-          </p>
-          <div className="flex flex-wrap justify-center gap-3">
-            <Link
-              href="/cara-daftar"
-              className="inline-flex items-center gap-2 bg-white text-[#2F855A] font-semibold px-7 py-3 rounded-full hover:bg-green-50 transition-colors shadow-lg"
-            >
-              Cara Mendaftar <ArrowRight className="w-4 h-4" />
-            </Link>
-            <Link
-              href="/kontak"
-              className="inline-flex items-center gap-2 bg-white/20 text-white font-semibold px-7 py-3 rounded-full hover:bg-white/30 transition-colors border border-white/30"
-            >
-              Hubungi Kami
-            </Link>
-          </div>
-        </div>
-      </section>
     </>
   );
 }

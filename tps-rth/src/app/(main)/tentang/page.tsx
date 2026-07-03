@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { CheckCircle, ArrowRight, Users, Weight, Building2, Recycle } from "lucide-react";
+import { CheckCircle } from "lucide-react";
 import { tpsInfo } from "@/data/tps";
 
 export const metadata: Metadata = {
   title: "Tentang Kami",
-  description: "Informasi lengkap mengenai TPS RTH Cikaret, misi, visi, fasilitas, dan struktur organisasi.",
+  description: "Informasi lengkap mengenai TPST-3R RTH PBPA, misi, visi, fasilitas, dan struktur organisasi.",
 };
 
 const threeR = [
@@ -49,7 +49,7 @@ const threeR = [
     desc: "Proses sampah menjadi bahan baku produk baru yang bernilai ekonomis dan ramah lingkungan.",
     tips: [
       "Pilah sampah organik dan anorganik dari sumbernya",
-      "Setor sampah anorganik ke TPS RTH untuk didaur ulang",
+      "Setor sampah anorganik ke TPST-3R RTH untuk didaur ulang",
       "Olah sampah organik menjadi kompos untuk pupuk tanaman",
       "Buat kerajinan kreatif dari barang-barang bekas daur ulang",
     ],
@@ -67,9 +67,9 @@ export default function TentangPage() {
             <span>/</span>
             <span className="text-white">Tentang Kami</span>
           </div>
-          <h1 className="text-3xl md:text-4xl font-bold mb-3">Tentang TPS RTH Cikaret</h1>
+          <h1 className="text-3xl md:text-4xl font-bold mb-3">Tentang TPST-3R RTH PBPA</h1>
           <p className="text-green-100 max-w-xl leading-relaxed">
-            Mengenal lebih dekat Tempat Pengelolaan Sampah Ruang Terbuka Hijau yang melayani masyarakat Kota Bogor.
+            Mengenal lebih dekat Tempat Pengelolaan Sampah Terpadu 3R Ruang Terbuka Hijau yang melayani masyarakat Kabupaten Tangerang.
           </p>
         </div>
       </section>
@@ -82,7 +82,7 @@ export default function TentangPage() {
             <div>
               <span className="text-sm font-semibold text-[#2F855A] uppercase tracking-wider">Profil Kami</span>
               <h2 className="text-2xl font-bold text-gray-900 mt-2 mb-4">
-                Siapa TPS RTH Cikaret?
+                Siapa TPST-3R RTH PBPA?
               </h2>
               <div className="h-30 rounded-2xl bg-[#092928] mb-4 md:h-30 2xl:h-30">
                 <img
@@ -93,19 +93,18 @@ export default function TentangPage() {
               </div>
               <div className="space-y-4 text-gray-600 leading-relaxed">
                 <p>
-                  <strong className="text-gray-900">TPS RTH Cikaret</strong> adalah Tempat Pengelolaan Sampah
+                  <strong className="text-gray-900">TPST-3R RTH PBPA (Paguyuban Bumi Puspiptek Asri)</strong> adalah Tempat Pengelolaan Sampah
                   berbasis Ruang Terbuka Hijau yang hadir sebagai solusi pengelolaan sampah terpadu di
-                  Kelurahan Cikaret, Kota Bogor. Berdiri sejak tahun {tpsInfo.established}, kami
+                  Kelurahan Pagedangan, Kabupaten Tangerang. Mulai beroperasi lagi di tahun {tpsInfo.established}, kami
                   berkomitmen mewujudkan lingkungan yang bersih dan sehat melalui pendekatan komunitas.
                 </p>
                 <p>
-                  Kami mengelola sampah rumah tangga warga melalui sistem <strong className="text-[#2F855A]">bank
-                  sampah</strong> — warga dapat menabung sampah terpilah dan mendapatkan nilai ekonomis dari
-                  limbah yang selama ini dianggap tidak berguna. Setiap setoran dicatat dan dikonversi menjadi
-                  saldo yang dapat dicairkan secara berkala.
+                  Kami mengelola sampah rumah tangga warga berbasis prinsip <strong className="text-[#2F855A]">3R 
+                  (Reduce, Reuse, Recycle)</strong> — pendekatan strategis untuk memaksimalkan nilai guna sampah
+                  melalui proses pemilahan, pengolahan, dan pemanfaatan kembali sampah secara berkelanjutan. 
                 </p>
                 <p>
-                  Selain pengelolaan fisik sampah, TPS RTH aktif dalam kegiatan edukasi, sosialisasi pemilahan
+                  Selain pengelolaan fisik sampah, TPST-3R RTH aktif dalam kegiatan edukasi, sosialisasi pemilahan
                   sampah, dan pemberdayaan warga sekitar. Kami percaya bahwa perubahan dimulai dari
                   kesadaran komunitas.
                 </p>
@@ -114,80 +113,30 @@ export default function TentangPage() {
 
             {/* Info table */}
             <div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">Informasi TPS</h2>
+              <h2 className="text-2xl font-bold text-gray-900 mb-4">Informasi TPST</h2>
               <div className="bg-[#FBFAF2] rounded-2xl p-6 border border-[#E6DFAF] space-y-0">
                 {[
-                  { label: "Nama TPS", value: tpsInfo.name },
-                  { label: "Status", value: tpsInfo.status },
-                  { label: "Berdiri Sejak", value: tpsInfo.established },
-                  { label: "Kapasitas", value: tpsInfo.capacity },
+                  { label: "Nama TPST", value: tpsInfo.name },
+                  { label: "Beroperasi Sejak", value: tpsInfo.established },
                   { label: "Alamat", value: tpsInfo.address },
-                  { label: "Kecamatan", value: tpsInfo.district },
-                  { label: "Kota", value: `${tpsInfo.city}, ${tpsInfo.province}` },
+                  { label: "Kabupaten/Provinsi", value: `${tpsInfo.city}, ${tpsInfo.province}` },
                 ].map((item, idx, arr) => (
                   <div
                     key={item.label}
                     className={`flex justify-between items-start py-3 gap-4 ${idx < arr.length - 1 ? "border-b border-[#E6DFAF]" : ""}`}
                   >
-                    <dt className="text-sm text-gray-500 flex-shrink-0 w-32">{item.label}</dt>
+                    <dt className="text-sm text-gray-500 flex-shrink-0 w-36">{item.label}</dt>
                     <dd className="text-sm font-medium text-gray-900 text-right">{item.value}</dd>
                   </div>
                 ))}
-                <div className="pt-3">
-                  <dt className="text-sm text-gray-500 mb-2">Jenis Sampah Diterima</dt>
-                  <dd className="flex flex-wrap gap-2">
-                    {tpsInfo.wasteTypes.map((w) => (
-                      <span key={w} className="text-xs bg-[#F0FFF4] text-[#2F855A] border border-green-200 rounded-full px-3 py-1 font-medium">
-                        {w}
-                      </span>
-                    ))}
-                  </dd>
-                </div>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* 3R Section */}
-      <section className="px-4 py-14 bg-[#FBFAF2]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-10">
-            <span className="text-sm font-semibold text-[#2F855A] uppercase tracking-wider">Prinsip Kami</span>
-            <h2 className="text-3xl font-bold text-gray-900 mt-1">Konsep 3R yang Kami Terapkan</h2>
-            <p className="text-gray-500 mt-2 max-w-xl mx-auto text-sm leading-relaxed">
-              Seluruh kegiatan TPS RTH Cikaret berlandaskan pada tiga prinsip dasar pengelolaan sampah
-              yang berkelanjutan: Reduce, Reuse, dan Recycle.
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-6">
-            {threeR.map((r) => (
-              <div key={r.key} className={`bg-white rounded-2xl border ${r.color} overflow-hidden shadow-sm`}>
-                <div className={`px-6 py-5 border-b ${r.color}`}>
-                  <div className="text-4xl mb-2">{r.emoji}</div>
-                  <h3 className={`text-2xl font-extrabold ${r.headColor}`}>{r.label}</h3>
-                  <p className="text-gray-500 text-sm font-medium">{r.sublabel}</p>
-                </div>
-                <div className="p-6">
-                  <p className="text-gray-600 text-sm leading-relaxed mb-4">{r.desc}</p>
-                  <ul className="space-y-2">
-                    {r.tips.map((tip) => (
-                      <li key={tip} className="flex items-start gap-2 text-sm text-gray-600">
-                        <CheckCircle className={`w-4 h-4 flex-shrink-0 mt-0.5 ${r.headColor}`} />
-                        <span>{tip}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* Organization */}
-      <section className="px-4 py-14 bg-white">
+      <section className="px-4 py-14 bg-[#FBFAF2]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-10">
             <span className="text-sm font-semibold text-[#2F855A] uppercase tracking-wider">Pengurus</span>
@@ -209,17 +158,40 @@ export default function TentangPage() {
         </div>
       </section>
 
-      {/* CTA */}
-      <section className="px-4 py-14 bg-[#2F855A]">
-        <div className="max-w-2xl mx-auto px-4 text-center text-white">
-          <h2 className="text-2xl font-bold mb-3">Tertarik Bergabung?</h2>
-          <p className="text-green-100 mb-6">Daftarkan diri Anda sebagai nasabah TPS RTH dan mulai berkontribusi untuk lingkungan yang lebih baik.</p>
-          <Link
-            href="/cara-daftar"
-            className="inline-flex items-center gap-2 bg-white text-[#2F855A] font-semibold px-7 py-3 rounded-full hover:bg-green-50 transition-colors shadow-lg"
-          >
-            Cara Mendaftar <ArrowRight className="w-4 h-4" />
-          </Link>
+      {/* 3R Section */}
+      <section className="px-4 py-14 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-10">
+            <span className="text-sm font-semibold text-[#2F855A] uppercase tracking-wider">Prinsip Kami</span>
+            <h2 className="text-3xl font-bold text-gray-900 mt-1">Konsep 3R yang Kami Terapkan</h2>
+            <p className="text-gray-500 mt-2 max-w-xl mx-auto text-sm leading-relaxed">
+              Seluruh kegiatan TPST-3R RTH PBPA berlandaskan pada tiga prinsip dasar pengelolaan sampah
+              yang berkelanjutan: Reduce, Reuse, dan Recycle.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-6">
+            {threeR.map((r) => (
+              <div key={r.key} className={`bg-white rounded-2xl border ${r.color} overflow-hidden shadow-sm`}>
+                <div className={`px-6 py-5 border-b ${r.color}`}>
+                  <div className="text-4xl mb-2">{r.emoji}</div>
+                  <h3 className={`text-2xl font-extrabold ${r.headColor}`}>{r.label}</h3>
+                  <p className="text-gray-500 text-sm font-medium">{r.sublabel}</p>
+                </div>
+                <div className="p-6">
+                  <p className="text-gray-600 text-sm leading-relaxed mb-4">{r.desc}</p>
+                  <ul className="space-y-2">
+                    {r.tips.map((tip) => (
+                      <li key={tip} className="flex items-start gap-2 text-sm text-gray-600">
+                        <CheckCircle className={`w-4 h-4 shrink-0 mt-0.5 ${r.headColor}`} />
+                        <span>{tip}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
     </>

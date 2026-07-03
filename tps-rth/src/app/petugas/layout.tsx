@@ -3,15 +3,15 @@
 import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
-import { Leaf, LayoutDashboard, Trash2, Settings, LogOut, Menu, X, ChevronRight, CalendarCheck, FileText } from "lucide-react";
-import { getSession, clearSession, seedPetugasAccount, type SessionUser } from "@/lib/mockAuth";
+import { Leaf, LayoutDashboard, Trash2, LogOut, Menu, X, ChevronRight, CalendarCheck, FileText, Home, Bell } from "lucide-react";
+import { getSession, clearSession, type SessionUser } from "@/lib/mockAuth";
 
 const navItems = [
-  { href: "/petugas/dashboard", label: "Dashboard",       icon: LayoutDashboard },
-  { href: "/petugas/absen",     label: "Absen",           icon: CalendarCheck },
-  { href: "/petugas/izin",      label: "Izin / Cuti",     icon: FileText },
-  { href: "/petugas/sampah",    label: "Input Sampah",    icon: Trash2 },
-  { href: "/petugas/akun",      label: "Pengaturan Akun", icon: Settings },
+  { href: "/petugas/dashboard",  label: "Dashboard",    icon: LayoutDashboard },
+  { href: "/petugas/absen",      label: "Absen",        icon: CalendarCheck },
+  { href: "/petugas/izin",       label: "Izin / Cuti",  icon: FileText },
+  { href: "/petugas/sampah",     label: "Input Sampah", icon: Trash2 },
+  { href: "/petugas/notifikasi", label: "Notifikasi",   icon: Bell },
 ];
 
 export default function PetugasLayout({ children }: { children: React.ReactNode }) {
@@ -19,36 +19,22 @@ export default function PetugasLayout({ children }: { children: React.ReactNode 
   const pathname = usePathname();
   const [session, setSession] = useState<SessionUser | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    seedPetugasAccount();
-    const s = getSession();
-    if (!s || s.role !== "petugas") {
-      router.replace("/login");
-      return;
+    getSession().then((s) => { if (s) setSession(s); });
+  }, []);
+
+  useEffect(() => {
+    function refresh() {
+      getSession().then((s) => { if (s) setSession(s); });
     }
-    setSession(s);
-    setReady(true);
-  }, [router]);
+    window.addEventListener("session-updated", refresh);
+    return () => window.removeEventListener("session-updated", refresh);
+  }, []);
 
-  function handleLogout() {
-    clearSession();
+  async function handleLogout() {
+    await clearSession();
     router.push("/login");
-  }
-
-  if (!ready) {
-    return (
-      <div className="flex h-screen items-center justify-center bg-gray-50">
-        <div className="flex items-center gap-3 text-gray-500">
-          <svg className="animate-spin w-5 h-5" viewBox="0 0 24 24" fill="none">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
-          </svg>
-          Memeriksa akses...
-        </div>
-      </div>
-    );
   }
 
   return (
@@ -67,10 +53,10 @@ export default function PetugasLayout({ children }: { children: React.ReactNode 
             <Leaf className="w-4 h-4 text-white" />
           </div>
           <div className="leading-tight">
-            <span className="font-bold text-sm block">TPS RTH</span>
+            <span className="font-bold text-sm block">TPST PBPA</span>
             <span className="text-[10px] text-green-300/70">Portal Petugas</span>
           </div>
-          <button onClick={() => setSidebarOpen(false)} className="ml-auto lg:hidden text-white/50 hover:text-white">
+          <button type="button" title="Tutup menu" onClick={() => setSidebarOpen(false)} className="ml-auto lg:hidden text-white/50 hover:text-white">
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -93,34 +79,48 @@ export default function PetugasLayout({ children }: { children: React.ReactNode 
               </Link>
             );
           })}
+        </nav>
+
+        <div className="px-3 pb-3 space-y-1">
           <Link
             href="/"
             onClick={() => setSidebarOpen(false)}
-            className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium mb-0.5 text-white/50 hover:bg-white/10 hover:text-white transition-colors"
+            className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-white/50 hover:bg-white/10 hover:text-white transition-colors"
           >
-            ← Kembali ke Beranda
+            <Home className="w-4 h-4 shrink-0" />
+            Kembali ke Beranda
           </Link>
-        </nav>
-
-        <div className="px-3 py-3 border-t border-white/10">
-          <div className="flex items-center gap-2.5 px-2 py-2 rounded-lg bg-white/5">
-            <div className="w-7 h-7 rounded-full bg-[#2F855A] flex items-center justify-center text-xs font-bold shrink-0">
-              {session?.nama?.[0] ?? "P"}
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-xs font-semibold truncate">{session?.nama}</p>
-              <p className="text-[10px] text-white/50 truncate">{session?.jabatan ?? "Petugas"}</p>
-            </div>
-            <button onClick={handleLogout} className="text-white/40 hover:text-red-400 transition-colors" title="Keluar">
-              <LogOut className="w-4 h-4" />
-            </button>
+          <div className="border-t border-white/10 pt-2">
+            <Link
+              href="/petugas/akun"
+              onClick={() => setSidebarOpen(false)}
+              className="flex items-center gap-2.5 px-2 py-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors group"
+            >
+              <div className="w-7 h-7 rounded-full bg-[#2F855A] flex items-center justify-center text-xs font-bold shrink-0 overflow-hidden">
+                {session?.avatar_url
+                  ? <img src={session.avatar_url} alt="" className="w-full h-full object-cover" />
+                  : <span>{session?.nama?.[0] ?? "P"}</span>}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-semibold truncate group-hover:text-white">{session?.nama}</p>
+                <p className="text-[10px] text-white/50 truncate">{session?.jabatan ?? "Petugas"}</p>
+              </div>
+              <button
+                type="button"
+                onClick={(e) => { e.preventDefault(); handleLogout(); }}
+                className="text-white/40 hover:text-red-400 transition-colors shrink-0"
+                title="Keluar"
+              >
+                <LogOut className="w-4 h-4" />
+              </button>
+            </Link>
           </div>
         </div>
       </aside>
 
       <div className="flex-1 flex flex-col overflow-hidden">
         <header className="h-14 bg-white border-b border-gray-200 flex items-center px-4 gap-3 shrink-0">
-          <button onClick={() => setSidebarOpen(true)} className="lg:hidden text-gray-500 hover:text-gray-700">
+          <button type="button" title="Buka menu" onClick={() => setSidebarOpen(true)} className="lg:hidden text-gray-500 hover:text-gray-700">
             <Menu className="w-5 h-5" />
           </button>
           <div className="flex-1 text-sm font-semibold text-gray-700">

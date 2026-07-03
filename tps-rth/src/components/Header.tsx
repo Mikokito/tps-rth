@@ -10,9 +10,7 @@ const navLinks = [
   { href: "/", label: "Beranda" },
   { href: "/tentang", label: "Tentang Kami" },
   { href: "/berita", label: "Berita" },
-  { href: "/edukasi", label: "Edukasi" },
   { href: "/kontak", label: "Kontak" },
-  { href: "/cara-daftar", label: "Cara Daftar" },
 ];
 
 export default function Header() {
@@ -22,11 +20,11 @@ export default function Header() {
   const router = useRouter();
 
   useEffect(() => {
-    setSession(getSession());
+    getSession().then(setSession);
   }, [pathname]);
 
-  function handleLogout() {
-    clearSession();
+  async function handleLogout() {
+    await clearSession();
     setSession(null);
     setIsOpen(false);
     router.push("/");
@@ -42,7 +40,7 @@ export default function Header() {
               <Leaf className="w-5 h-5 text-white" />
             </div>
             <div className="leading-tight">
-              <span className="font-bold text-lg text-[#2F855A] block leading-none">TPS RTH</span>
+              <span className="font-bold text-lg text-[#2F855A] block leading-none">TPST-3R RTH PBPA</span>
               <span className="text-[10px] text-gray-500 leading-none">Pengelolaan Sampah 3R</span>
             </div>
           </Link>
@@ -71,9 +69,14 @@ export default function Header() {
           <div className="hidden md:flex items-center gap-2">
             {session ? (
               <>
-                {(session.role === "user" || session.role === "petugas" || session.role === "admin") && (
+                {(session.role === "user" || session.role === "petugas" || session.role === "admin" || session.role === "manager" || session.role === "manajer") && (
                   <Link
-                    href={session.role === "admin" ? "/admin/dashboard" : session.role === "petugas" ? "/petugas/dashboard" : "/user/dashboard"}
+                    href={
+                      session.role === "admin" ? "/admin/dashboard" :
+                      session.role === "petugas" ? "/petugas/dashboard" :
+                      (session.role === "manager" || session.role === "manajer") ? "/manager/dashboard" :
+                      "/user/dashboard"
+                    }
                     className="flex items-center gap-1.5 text-sm font-medium text-[#2F855A] px-3 py-2 rounded-lg hover:bg-[#F0FFF4] transition-colors"
                   >
                     <LayoutDashboard className="w-4 h-4" />
@@ -163,9 +166,14 @@ export default function Header() {
                     Keluar
                   </button>
                 </div>
-                {(session.role === "user" || session.role === "petugas" || session.role === "admin") && (
+                {(session.role === "user" || session.role === "petugas" || session.role === "admin" || session.role === "manager" || session.role === "manajer") && (
                   <Link
-                    href={session.role === "admin" ? "/admin/dashboard" : session.role === "petugas" ? "/petugas/dashboard" : "/user/dashboard"}
+                    href={
+                      session.role === "admin" ? "/admin/dashboard" :
+                      session.role === "petugas" ? "/petugas/dashboard" :
+                      (session.role === "manager" || session.role === "manajer") ? "/manager/dashboard" :
+                      "/user/dashboard"
+                    }
                     onClick={() => setIsOpen(false)}
                     className="flex items-center gap-2 text-sm font-medium text-[#2F855A] px-3 py-2 rounded-lg bg-[#F0FFF4] hover:bg-green-100 transition-colors"
                   >

@@ -1,14 +1,31 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import { Check, X, CalendarRange, Clock } from "lucide-react";
-import { izinCutiData, type IzinCutiEntry } from "@/data/adminData";
+import { useState, useEffect, useMemo } from "react";
+import { Check, X, CalendarRange, Clock, MessageSquare } from "lucide-react";
+import { createClient } from "@/utils/supabase/client";
+import { getSession } from "@/lib/mockAuth";
 
-// --- Types ---
-type Status = IzinCutiEntry["status"];
+type Status = "menunggu" | "disetujui" | "ditolak";
 type FilterStatus = "semua" | Status;
+type Jenis = "izin" | "cuti";
+type Durasi = "setengah_hari" | "sehari" | null;
 
-// --- Constants ---
+type IzinRow = {
+  id: string;
+  staff_id: string;
+  jenis: Jenis;
+  durasi: Durasi;
+  tanggal_mulai: string;
+  tanggal_selesai: string;
+  alasan: string;
+  status: Status;
+  submitted_at: string;
+  confirmed_at: string | null;
+  confirmed_by: string | null;
+  catatan: string | null;
+  staff_members: { nama: string; jabatan: string | null } | null;
+};
+
 const STATUS_LABEL: Record<Status, string> = {
   menunggu:  "Menunggu",
   disetujui: "Disetujui",
@@ -16,69 +33,14 @@ const STATUS_LABEL: Record<Status, string> = {
 };
 
 const STATUS_STYLE: Record<Status, string> = {
-  menunggu:  "bg-blue-100 text-blue-700",
+  menunggu:  "bg-amber-50 text-amber-600",
   disetujui: "bg-green-100 text-green-700",
   ditolak:   "bg-red-100 text-red-600",
 };
 
-const JENIS_STYLE: Record<IzinCutiEntry["jenis"], string> = {
-  Izin: "bg-amber-50 text-amber-700 border border-amber-200",
-  Cuti: "bg-violet-50 text-violet-700 border border-violet-200",
-};
-
-// --- Reusable sub-components ---
-function StatusBadge({ status }: { status: Status }) {
-  return (
-    <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${STATUS_STYLE[status]}`}>
-      {STATUS_LABEL[status]}
-    </span>
-  );
-}
-
-function JenisBadge({ jenis }: { jenis: IzinCutiEntry["jenis"] }) {
-  return (
-    <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${JENIS_STYLE[jenis]}`}>
-      {jenis}
-    </span>
-  );
-}
-
-function ActionButtons({
-  entry,
-  onApprove,
-  onReject,
-}: {
-  entry: IzinCutiEntry;
-  onApprove: (id: string) => void;
-  onReject: (id: string) => void;
-}) {
-  if (entry.status !== "menunggu") {
-    return <span className="text-xs text-gray-300">—</span>;
-  }
-  return (
-    <div className="flex items-center gap-1.5 justify-center">
-      <button
-        onClick={() => onApprove(entry.id)}
-        className="flex items-center gap-1 text-xs font-semibold text-white bg-[#2F855A] px-2.5 py-1.5 rounded-lg hover:bg-[#276749] transition-colors"
-      >
-        <Check className="w-3 h-3" /> Setujui
-      </button>
-      <button
-        onClick={() => onReject(entry.id)}
-        className="flex items-center gap-1 text-xs font-semibold text-red-600 border border-red-200 px-2.5 py-1.5 rounded-lg hover:bg-red-50 transition-colors"
-      >
-        <X className="w-3 h-3" /> Tolak
-      </button>
-    </div>
-  );
-}
-
-// --- Helpers ---
 function fmtDate(iso: string) {
   return new Date(iso).toLocaleDateString("id-ID", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
+    day: "numeric", month: "short", year: "numeric",
   });
 }
 
@@ -91,40 +53,127 @@ function durasi(mulai: string, selesai: string) {
   return days === 1 ? "1 hari" : `${days} hari`;
 }
 
-// --- Page ---
-export default function IzinCutiPage() {
-  const [entries, setEntries] = useState<IzinCutiEntry[]>(izinCutiData);
-  const [filterStatus, setFilterStatus] = useState<FilterStatus>("semua");
+function jenisLabel(jenis: Jenis, d: Durasi) {
+  if (jenis === "cuti") return "Cuti";
+  return d === "setengah_hari" ? "Izin ½ Hari" : "Izin Sehari";
+}
+
+const JENIS_STYLE: Record<Jenis, string> = {
+  izin: "bg-amber-50 text-amber-700 border border-amber-200",
+  cuti: "bg-violet-50 text-violet-700 border border-violet-200",
+};
+
+export default function IzinCutiAdminPage() {
+  const [rows,          setRows]          = useState<IzinRow[]>([]);
+  const [ready,         setReady]         = useState(false);
+  const [filterStatus,  setFilterStatus]  = useState<FilterStatus>("semua");
+  const [adminName,     setAdminName]     = useState<string>("");
+
+  // Reject modal
+  const [rejectId,   setRejectId]   = useState<string | null>(null);
+  const [catatan,    setCatatan]    = useState("");
+  const [processing, setProcessing] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function load() {
+      try {
+        const session = await getSession();
+        if (session?.nama) setAdminName(session.nama);
+
+        const supabase = createClient();
+        const { data, error } = await supabase
+          .from("izin_cuti")
+          .select(
+            "id, staff_id, jenis, durasi, tanggal_mulai, tanggal_selesai, alasan, status, submitted_at, confirmed_at, confirmed_by, catatan, staff_members(nama, jabatan)"
+          )
+          .order("submitted_at", { ascending: false });
+
+        if (error) console.error("izin_cuti load error:", error.message);
+        if (data) setRows(data as unknown as IzinRow[]);
+      } catch (err) {
+        console.error("load error:", err);
+      } finally {
+        setReady(true);
+      }
+    }
+    load();
+  }, []);
+
+  async function handleApprove(id: string) {
+    setProcessing(id);
+    try {
+      const supabase = createClient();
+      const now = new Date().toISOString();
+      const { error } = await supabase
+        .from("izin_cuti")
+        .update({ status: "disetujui", confirmed_at: now, confirmed_by: adminName })
+        .eq("id", id);
+      if (!error) {
+        setRows((prev) =>
+          prev.map((r) =>
+            r.id === id ? { ...r, status: "disetujui", confirmed_at: now, confirmed_by: adminName } : r
+          )
+        );
+      }
+    } catch (err) {
+      console.error("approve error:", err);
+    } finally {
+      setProcessing(null);
+    }
+  }
+
+  function openReject(id: string) {
+    setRejectId(id);
+    setCatatan("");
+  }
+
+  async function confirmReject() {
+    if (!rejectId) return;
+    setProcessing(rejectId);
+    try {
+      const supabase = createClient();
+      const now = new Date().toISOString();
+      const { error } = await supabase
+        .from("izin_cuti")
+        .update({
+          status: "ditolak",
+          confirmed_at: now,
+          confirmed_by: adminName,
+          catatan: catatan.trim() || null,
+        })
+        .eq("id", rejectId);
+      if (!error) {
+        const rid = rejectId;
+        setRows((prev) =>
+          prev.map((r) =>
+            r.id === rid
+              ? { ...r, status: "ditolak", confirmed_at: now, confirmed_by: adminName, catatan: catatan.trim() || null }
+              : r
+          )
+        );
+      }
+    } catch (err) {
+      console.error("reject error:", err);
+    } finally {
+      setProcessing(null);
+      setRejectId(null);
+    }
+  }
 
   const counts = useMemo(
     () => ({
-      semua:     entries.length,
-      menunggu:  entries.filter((e) => e.status === "menunggu").length,
-      disetujui: entries.filter((e) => e.status === "disetujui").length,
-      ditolak:   entries.filter((e) => e.status === "ditolak").length,
+      semua:     rows.length,
+      menunggu:  rows.filter((r) => r.status === "menunggu").length,
+      disetujui: rows.filter((r) => r.status === "disetujui").length,
+      ditolak:   rows.filter((r) => r.status === "ditolak").length,
     }),
-    [entries]
+    [rows]
   );
 
   const filtered = useMemo(
-    () =>
-      filterStatus === "semua"
-        ? entries
-        : entries.filter((e) => e.status === filterStatus),
-    [entries, filterStatus]
+    () => filterStatus === "semua" ? rows : rows.filter((r) => r.status === filterStatus),
+    [rows, filterStatus]
   );
-
-  function handleApprove(id: string) {
-    setEntries((prev) =>
-      prev.map((e) => (e.id === id ? { ...e, status: "disetujui" } : e))
-    );
-  }
-
-  function handleReject(id: string) {
-    setEntries((prev) =>
-      prev.map((e) => (e.id === id ? { ...e, status: "ditolak" } : e))
-    );
-  }
 
   const FILTER_TABS: { key: FilterStatus; label: string }[] = [
     { key: "semua",     label: "Semua" },
@@ -133,23 +182,30 @@ export default function IzinCutiPage() {
     { key: "ditolak",   label: "Ditolak" },
   ];
 
+  if (!ready) {
+    return (
+      <div className="flex h-40 items-center justify-center text-gray-400 text-sm">
+        Memuat data...
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
-      {/* Page header */}
       <div>
         <h1 className="text-xl font-bold text-gray-900">Izin &amp; Cuti</h1>
         <p className="text-sm text-gray-500">Kelola pengajuan izin dan cuti petugas</p>
       </div>
 
-      {/* Summary stats */}
+      {/* Stat cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
-          { label: "Total",     value: counts.semua,     color: "text-gray-700"},
-          { label: "Menunggu",  value: counts.menunggu,  color: "text-blue-700"},
-          { label: "Disetujui", value: counts.disetujui, color: "text-green-700"},
-          { label: "Ditolak",   value: counts.ditolak,   color: "text-red-600"},
-        ].map(({ label, value, color}) => (
-          <div key={label} className={`bg-white shadow-sm border border-gray-100 rounded-xl px-4 py-3`}>
+          { label: "Total",     value: counts.semua,     color: "text-gray-700" },
+          { label: "Menunggu",  value: counts.menunggu,  color: "text-amber-600" },
+          { label: "Disetujui", value: counts.disetujui, color: "text-green-700" },
+          { label: "Ditolak",   value: counts.ditolak,   color: "text-red-600" },
+        ].map(({ label, value, color }) => (
+          <div key={label} className="bg-white shadow-sm border border-gray-100 rounded-xl px-4 py-3">
             <p className="text-xs text-gray-500 font-medium">{label}</p>
             <p className={`text-2xl font-bold mt-0.5 ${color}`}>{value}</p>
           </div>
@@ -158,18 +214,16 @@ export default function IzinCutiPage() {
 
       {/* Table card */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-        {/* Card header */}
         <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between gap-4 flex-wrap">
           <div className="flex items-center gap-2">
             <CalendarRange className="w-4 h-4 text-[#2F855A]" />
             <h2 className="text-sm font-semibold text-gray-800">Daftar Pengajuan</h2>
           </div>
-
-          {/* Filter tabs */}
           <div className="flex items-center gap-1.5 flex-wrap">
             {FILTER_TABS.map(({ key, label }) => (
               <button
                 key={key}
+                type="button"
                 onClick={() => setFilterStatus(key)}
                 className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
                   filterStatus === key
@@ -202,70 +256,81 @@ export default function IzinCutiPage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="bg-gray-50 border-b border-gray-100">
-                    <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                      Petugas
-                    </th>
-                    <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                      Jenis
-                    </th>
-                    <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                      Tanggal Mulai
-                    </th>
-                    <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                      Tanggal Selesai
-                    </th>
-                    <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                      Durasi
-                    </th>
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                      Alasan
-                    </th>
-                    <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                      Status
-                    </th>
-                    <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                      Aksi
-                    </th>
+                    <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Petugas</th>
+                    <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Jenis</th>
+                    <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Mulai</th>
+                    <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Selesai</th>
+                    <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Durasi</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Alasan</th>
+                    <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Status</th>
+                    <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Aksi</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50">
-                  {filtered.map((entry) => (
+                  {filtered.map((row) => (
                     <tr
-                      key={entry.id}
-                      className={`transition-colors hover:bg-gray-50 ${
-                        entry.status === "menunggu" ? "bg-blue-50/20" : ""
-                      }`}
+                      key={row.id}
+                      className={`transition-colors hover:bg-gray-50 ${row.status === "menunggu" ? "bg-amber-50/30" : ""}`}
                     >
                       <td className="px-5 py-3.5">
                         <p className="text-sm font-medium text-gray-900">
-                          {entry.namaPetugas}
+                          {row.staff_members?.nama ?? `Staff ${row.staff_id.slice(0, 6)}`}
                         </p>
-                        <p className="text-xs text-gray-400">{entry.jabatan}</p>
+                        <p className="text-xs text-gray-400">{row.staff_members?.jabatan ?? "—"}</p>
+                        <p className="text-[11px] text-gray-300 mt-0.5">
+                          {new Date(row.submitted_at).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })}
+                        </p>
                       </td>
                       <td className="px-4 py-3.5 text-center">
-                        <JenisBadge jenis={entry.jenis} />
+                        <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${JENIS_STYLE[row.jenis]}`}>
+                          {jenisLabel(row.jenis, row.durasi)}
+                        </span>
                       </td>
                       <td className="px-4 py-3.5 text-center text-xs text-gray-600">
-                        {fmtDate(entry.tanggalMulai)}
+                        {fmtDate(row.tanggal_mulai)}
                       </td>
                       <td className="px-4 py-3.5 text-center text-xs text-gray-600">
-                        {fmtDate(entry.tanggalSelesai)}
+                        {fmtDate(row.tanggal_selesai)}
                       </td>
                       <td className="px-4 py-3.5 text-center text-xs text-gray-500">
-                        {durasi(entry.tanggalMulai, entry.tanggalSelesai)}
+                        {durasi(row.tanggal_mulai, row.tanggal_selesai)}
                       </td>
-                      <td className="px-4 py-3.5 text-xs text-gray-600 max-w-[200px]">
-                        {entry.alasan}
+                      <td className="px-4 py-3.5 text-xs text-gray-600 max-w-50">
+                        <span>{row.alasan}</span>
+                        {row.catatan && row.status === "ditolak" && (
+                          <p className="text-[11px] text-red-400 mt-0.5 italic">Catatan: {row.catatan}</p>
+                        )}
                       </td>
                       <td className="px-4 py-3.5 text-center">
-                        <StatusBadge status={entry.status} />
+                        <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${STATUS_STYLE[row.status]}`}>
+                          {STATUS_LABEL[row.status]}
+                        </span>
                       </td>
                       <td className="px-4 py-3.5 text-center">
-                        <ActionButtons
-                          entry={entry}
-                          onApprove={handleApprove}
-                          onReject={handleReject}
-                        />
+                        {row.status === "menunggu" ? (
+                          <div className="flex items-center gap-1.5 justify-center">
+                            <button
+                              type="button"
+                              disabled={processing === row.id}
+                              onClick={() => handleApprove(row.id)}
+                              className="flex items-center gap-1 text-xs font-semibold text-white bg-[#2F855A] px-2.5 py-1.5 rounded-lg hover:bg-[#276749] disabled:opacity-50 transition-colors"
+                            >
+                              <Check className="w-3 h-3" /> Setujui
+                            </button>
+                            <button
+                              type="button"
+                              disabled={processing === row.id}
+                              onClick={() => openReject(row.id)}
+                              className="flex items-center gap-1 text-xs font-semibold text-red-600 border border-red-200 px-2.5 py-1.5 rounded-lg hover:bg-red-50 disabled:opacity-50 transition-colors"
+                            >
+                              <X className="w-3 h-3" /> Tolak
+                            </button>
+                          </div>
+                        ) : (
+                          <span className="text-xs text-gray-300">
+                            {row.confirmed_by ? `oleh ${row.confirmed_by}` : "—"}
+                          </span>
+                        )}
                       </td>
                     </tr>
                   ))}
@@ -275,52 +340,56 @@ export default function IzinCutiPage() {
 
             {/* Mobile cards */}
             <div className="md:hidden divide-y divide-gray-50">
-              {filtered.map((entry) => (
+              {filtered.map((row) => (
                 <div
-                  key={entry.id}
-                  className={`px-4 py-4 ${
-                    entry.status === "menunggu" ? "bg-blue-50/20" : ""
-                  }`}
+                  key={row.id}
+                  className={`px-4 py-4 ${row.status === "menunggu" ? "bg-amber-50/20" : ""}`}
                 >
-                  {/* Name + status */}
                   <div className="flex items-start justify-between gap-3 mb-2">
                     <div>
                       <p className="text-sm font-semibold text-gray-900">
-                        {entry.namaPetugas}
+                        {row.staff_members?.nama ?? `Staff ${row.staff_id.slice(0, 6)}`}
                       </p>
-                      <p className="text-xs text-gray-400">{entry.jabatan}</p>
+                      <p className="text-xs text-gray-400">{row.staff_members?.jabatan ?? "—"}</p>
                     </div>
-                    <StatusBadge status={entry.status} />
+                    <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold shrink-0 ${STATUS_STYLE[row.status]}`}>
+                      {STATUS_LABEL[row.status]}
+                    </span>
                   </div>
-
-                  {/* Jenis + dates */}
                   <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-                    <JenisBadge jenis={entry.jenis} />
+                    <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${JENIS_STYLE[row.jenis]}`}>
+                      {jenisLabel(row.jenis, row.durasi)}
+                    </span>
                     <span className="text-xs text-gray-500">
-                      {fmtDate(entry.tanggalMulai)} – {fmtDate(entry.tanggalSelesai)}
+                      {fmtDate(row.tanggal_mulai)} – {fmtDate(row.tanggal_selesai)}
                     </span>
                     <span className="text-xs text-gray-400">
-                      ({durasi(entry.tanggalMulai, entry.tanggalSelesai)})
+                      ({durasi(row.tanggal_mulai, row.tanggal_selesai)})
                     </span>
                   </div>
-
-                  {/* Reason */}
-                  <p className="text-xs text-gray-500 mb-3 leading-relaxed">
-                    {entry.alasan}
+                  <p className="text-xs text-gray-500 mb-1 leading-relaxed">{row.alasan}</p>
+                  {row.catatan && row.status === "ditolak" && (
+                    <p className="text-xs text-red-400 italic mb-2">Catatan: {row.catatan}</p>
+                  )}
+                  <p className="text-[11px] text-gray-300 mb-3">
+                    Diajukan {new Date(row.submitted_at).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })}
+                    {row.confirmed_by && ` · oleh ${row.confirmed_by}`}
                   </p>
-
-                  {/* Action buttons */}
-                  {entry.status === "menunggu" && (
+                  {row.status === "menunggu" && (
                     <div className="flex gap-2">
                       <button
-                        onClick={() => handleApprove(entry.id)}
-                        className="flex items-center gap-1 text-xs font-semibold text-white bg-[#2F855A] px-3 py-1.5 rounded-lg hover:bg-[#276749] transition-colors"
+                        type="button"
+                        disabled={processing === row.id}
+                        onClick={() => handleApprove(row.id)}
+                        className="flex items-center gap-1 text-xs font-semibold text-white bg-[#2F855A] px-3 py-1.5 rounded-lg hover:bg-[#276749] disabled:opacity-50 transition-colors"
                       >
                         <Check className="w-3 h-3" /> Setujui
                       </button>
                       <button
-                        onClick={() => handleReject(entry.id)}
-                        className="flex items-center gap-1 text-xs font-semibold text-red-600 border border-red-200 px-3 py-1.5 rounded-lg hover:bg-red-50 transition-colors"
+                        type="button"
+                        disabled={processing === row.id}
+                        onClick={() => openReject(row.id)}
+                        className="flex items-center gap-1 text-xs font-semibold text-red-600 border border-red-200 px-3 py-1.5 rounded-lg hover:bg-red-50 disabled:opacity-50 transition-colors"
                       >
                         <X className="w-3 h-3" /> Tolak
                       </button>
@@ -332,6 +401,52 @@ export default function IzinCutiPage() {
           </>
         )}
       </div>
+
+      {/* Reject modal */}
+      {rejectId && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 space-y-4">
+            <div className="flex items-start gap-3">
+              <div className="w-9 h-9 rounded-full bg-red-100 flex items-center justify-center shrink-0">
+                <X className="w-4 h-4 text-red-600" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-gray-900">Tolak Pengajuan</h3>
+                <p className="text-xs text-gray-500 mt-0.5">Tambahkan catatan penolakan (opsional)</p>
+              </div>
+            </div>
+            <div>
+              <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+                <MessageSquare className="w-3.5 h-3.5" /> Catatan
+              </label>
+              <textarea
+                value={catatan}
+                onChange={(e) => setCatatan(e.target.value)}
+                placeholder="Misal: jadwal sudah penuh, harap ajukan ulang..."
+                rows={3}
+                className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-red-400 resize-none"
+              />
+            </div>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => setRejectId(null)}
+                className="flex-1 border border-gray-200 text-gray-600 text-sm font-semibold py-2.5 rounded-xl hover:bg-gray-50 transition-colors"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                disabled={!!processing}
+                onClick={confirmReject}
+                className="flex-1 bg-red-500 text-white text-sm font-semibold py-2.5 rounded-xl hover:bg-red-600 disabled:opacity-50 transition-colors"
+              >
+                {processing ? "Memproses..." : "Tolak"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

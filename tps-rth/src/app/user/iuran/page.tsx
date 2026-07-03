@@ -3,70 +3,15 @@
 import { useState, useEffect, useRef } from "react";
 import { Upload, Check, X, Clock, Send, FileImage } from "lucide-react";
 import { getSession, type SessionUser } from "@/lib/mockAuth";
+import { getMyIuran, submitIuran, getHargaIuran, type IuranRecord } from "@/app/actions/iuran";
+import { BULAN_LABEL } from "@/lib/bulan";
 
-export type IuranSubmission = {
-  id: string;
-  userEmail: string;
-  userNama: string;
-  bulanIdx: number;
-  tahun: number;
-  labelBulan: string;
-  fotoNama: string;
-  fotoDataUrl: string;
-  statusVerifikasi: "menunggu" | "diverifikasi" | "ditolak";
-  submittedAt: string;
-  verifiedAt?: string;
-  hargaIuran?: number;
-};
-
-export const BULAN_LABEL = [
-  "Januari","Februari","Maret","April","Mei","Juni",
-  "Juli","Agustus","September","Oktober","November","Desember",
-];
-
-export function getIuranKey(email: string) {
-  return `tps_rth_iuran_${email}`;
-}
-
-export const ALL_PAYMENTS_KEY = "tps_rth_all_payments";
-const HARGA_KEY = "tps_rth_harga_iuran";
-
-function makeSeed(session: { email: string; nama: string }, now: Date): IuranSubmission[] {
-  return [
-    {
-      id: "iu1",
-      userEmail: session.email,
-      userNama: session.nama,
-      bulanIdx: 2,
-      tahun: now.getFullYear(),
-      labelBulan: `Maret ${now.getFullYear()}`,
-      fotoNama: "bukti-maret.jpg",
-      fotoDataUrl: "",
-      statusVerifikasi: "diverifikasi",
-      submittedAt: new Date(now.getFullYear(), 2, 5, 10, 0).toISOString(),
-      verifiedAt: new Date(now.getFullYear(), 2, 6, 9, 0).toISOString(),
-    },
-    {
-      id: "iu2",
-      userEmail: session.email,
-      userNama: session.nama,
-      bulanIdx: 3,
-      tahun: now.getFullYear(),
-      labelBulan: `April ${now.getFullYear()}`,
-      fotoNama: "bukti-april.jpg",
-      fotoDataUrl: "",
-      statusVerifikasi: "menunggu",
-      submittedAt: new Date(now.getFullYear(), 3, 3, 9, 30).toISOString(),
-    },
-  ];
-}
-
-const STATUS_STYLE: Record<IuranSubmission["statusVerifikasi"], string> = {
+const STATUS_STYLE: Record<IuranRecord["status"], string> = {
   menunggu:    "bg-amber-50 text-amber-600 border border-amber-200",
   diverifikasi:"bg-green-50 text-green-700 border border-green-200",
   ditolak:     "bg-red-50 text-red-500 border border-red-200",
 };
-const STATUS_LABEL_MAP: Record<IuranSubmission["statusVerifikasi"], string> = {
+const STATUS_LABEL_MAP: Record<IuranRecord["status"], string> = {
   menunggu:    "Menunggu Verifikasi",
   diverifikasi:"Sudah Diverifikasi",
   ditolak:     "Ditolak",
@@ -83,7 +28,8 @@ export default function UserIuranPage() {
   const TAHUN_OPTIONS = [now.getFullYear() - 1, now.getFullYear(), now.getFullYear() + 1];
 
   const [session, setSession] = useState<SessionUser | null>(null);
-  const [submissions, setSubmissions] = useState<IuranSubmission[]>([]);
+  const [submissions, setSubmissions] = useState<IuranRecord[]>([]);
+  const [harga, setHarga] = useState(50000);
   const [bulanIdx, setBulanIdx] = useState(now.getMonth());
   const [tahun, setTahun] = useState(now.getFullYear());
   const [foto, setFoto] = useState<{ nama: string; dataUrl: string } | null>(null);
@@ -94,18 +40,19 @@ export default function UserIuranPage() {
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    const s = getSession();
-    setSession(s);
-    if (!s) return;
-    const raw = localStorage.getItem(getIuranKey(s.email));
-    if (raw) {
-      setSubmissions(JSON.parse(raw));
-    } else {
-      const seed = makeSeed(s, now);
-      localStorage.setItem(getIuranKey(s.email), JSON.stringify(seed));
-      setSubmissions(seed);
+    async function init() {
+      const s = await getSession();
+      setSession(s);
+      if (!s) return;
+
+      const [{ data: iuranData }, hargaData] = await Promise.all([
+        getMyIuran(s.id, s.email),
+        getHargaIuran(),
+      ]);
+      setSubmissions(iuranData);
+      setHarga(hargaData.jumlah);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    init();
   }, []);
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -123,52 +70,41 @@ export default function UserIuranPage() {
     if (fileRef.current) fileRef.current.value = "";
   }
 
-  function handleSubmit(e: React.SyntheticEvent<HTMLFormElement>) {
+  async function handleSubmit(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!foto) { setFormErr("Foto bukti wajib diunggah"); return; }
+    const bulan = bulanIdx + 1;
     const labelBulan = `${BULAN_LABEL[bulanIdx]} ${tahun}`;
-    if (submissions.some((s) => s.bulanIdx === bulanIdx && s.tahun === tahun)) {
+    if (submissions.some((s) => s.bulan === bulan && s.tahun === tahun)) {
       setFormErr(`Iuran ${labelBulan} sudah pernah diajukan`);
       return;
     }
+    if (!session) return;
     setFormErr("");
     setSending(true);
-    setTimeout(() => {
-      if (!session) return;
-      const rawHarga = localStorage.getItem(HARGA_KEY);
-      const hargaIuran: number = rawHarga ? JSON.parse(rawHarga).harga : 50000;
-      const newSub: IuranSubmission = {
-        id: `iu-${Date.now()}`,
-        userEmail: session.email,
-        userNama: session.nama,
-        bulanIdx, tahun, labelBulan,
-        fotoNama: foto.nama,
-        fotoDataUrl: foto.dataUrl,
-        statusVerifikasi: "menunggu",
-        submittedAt: new Date().toISOString(),
-        hargaIuran,
-      };
 
-      // Write to user key
-      const updated = [newSub, ...submissions];
-      setSubmissions(updated);
-      localStorage.setItem(getIuranKey(session.email), JSON.stringify(updated));
+    const { data, error } = await submitIuran({
+      userId: session.id,
+      email: session.email,
+      userNama: session.nama,
+      bulan,
+      tahun,
+      jumlah: harga,
+      fotoNama: foto.nama,
+      fotoDataUrl: foto.dataUrl,
+    });
 
-      // Write to shared admin key
-      const adminRaw = localStorage.getItem(ALL_PAYMENTS_KEY);
-      const adminList: IuranSubmission[] = adminRaw ? JSON.parse(adminRaw) : [];
-      localStorage.setItem(ALL_PAYMENTS_KEY, JSON.stringify([newSub, ...adminList]));
-
-      clearFoto();
-      setSending(false);
-      setSent(true);
-      setTimeout(() => setSent(false), 3000);
-    }, 600);
+    if (error) { setFormErr(error); setSending(false); return; }
+    if (data) setSubmissions((prev) => [data, ...prev]);
+    clearFoto();
+    setSending(false);
+    setSent(true);
+    setTimeout(() => setSent(false), 3000);
   }
 
   if (!session) return null;
 
-  const sorted = [...submissions].sort((a, b) => b.submittedAt.localeCompare(a.submittedAt));
+  const sorted = [...submissions].sort((a, b) => b.submitted_at.localeCompare(a.submitted_at));
 
   return (
     <div className="space-y-6 max-w-5xl">
@@ -200,6 +136,7 @@ export default function UserIuranPage() {
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1.5">Bulan <span className="text-red-500">*</span></label>
                 <select value={bulanIdx} onChange={(e) => { setBulanIdx(Number(e.target.value)); setFormErr(""); }}
+                  aria-label="Bulan"
                   className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#2F855A] bg-white">
                   {BULAN_LABEL.map((b, i) => <option key={i} value={i}>{b}</option>)}
                 </select>
@@ -207,6 +144,7 @@ export default function UserIuranPage() {
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1.5">Tahun <span className="text-red-500">*</span></label>
                 <select value={tahun} onChange={(e) => { setTahun(Number(e.target.value)); setFormErr(""); }}
+                  aria-label="Tahun"
                   className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#2F855A] bg-white">
                   {TAHUN_OPTIONS.map((t) => <option key={t} value={t}>{t}</option>)}
                 </select>
@@ -240,7 +178,7 @@ export default function UserIuranPage() {
                   <span className="text-xs">JPG, PNG, PDF — maks. 5 MB</span>
                 </button>
               )}
-              <input ref={fileRef} type="file" accept="image/*,.pdf" onChange={handleFileChange} className="hidden" />
+              <input ref={fileRef} type="file" accept="image/*,.pdf" onChange={handleFileChange} className="hidden" title="Upload foto bukti pembayaran" />
               {fotoErr && <p className="text-xs text-red-500 mt-1.5">{fotoErr}</p>}
             </div>
 
@@ -269,19 +207,19 @@ export default function UserIuranPage() {
                 <div key={sub.id} className="px-6 py-4">
                   <div className="flex items-start justify-between gap-3 mb-1.5">
                     <div className="min-w-0">
-                      <p className="text-sm font-semibold text-gray-900">{sub.labelBulan}</p>
-                      <p className="text-xs text-gray-400 mt-0.5">Dikirim: {fmtDate(sub.submittedAt)}</p>
-                      {sub.fotoNama && <p className="text-xs text-gray-300 mt-0.5 truncate">📎 {sub.fotoNama}</p>}
+                      <p className="text-sm font-semibold text-gray-900">{BULAN_LABEL[sub.bulan - 1]} {sub.tahun}</p>
+                      <p className="text-xs text-gray-400 mt-0.5">Dikirim: {fmtDate(sub.submitted_at)}</p>
+                      {sub.foto_nama && <p className="text-xs text-gray-300 mt-0.5 truncate">📎 {sub.foto_nama}</p>}
                     </div>
-                    <span className={`inline-flex items-center gap-1.5 shrink-0 px-2.5 py-1 rounded-full text-xs font-semibold ${STATUS_STYLE[sub.statusVerifikasi]}`}>
-                      {sub.statusVerifikasi === "diverifikasi" && <Check className="w-3 h-3" />}
-                      {sub.statusVerifikasi === "menunggu"    && <Clock className="w-3 h-3" />}
-                      {sub.statusVerifikasi === "ditolak"     && <X className="w-3 h-3" />}
-                      {STATUS_LABEL_MAP[sub.statusVerifikasi]}
+                    <span className={`inline-flex items-center gap-1.5 shrink-0 px-2.5 py-1 rounded-full text-xs font-semibold ${STATUS_STYLE[sub.status]}`}>
+                      {sub.status === "diverifikasi" && <Check className="w-3 h-3" />}
+                      {sub.status === "menunggu"    && <Clock className="w-3 h-3" />}
+                      {sub.status === "ditolak"     && <X className="w-3 h-3" />}
+                      {STATUS_LABEL_MAP[sub.status]}
                     </span>
                   </div>
-                  {sub.fotoDataUrl && sub.fotoDataUrl.startsWith("data:image") && (
-                    <img src={sub.fotoDataUrl} alt="bukti" className="mt-2 h-24 rounded-lg object-cover border border-gray-100" />
+                  {sub.foto_data_url && (
+                    <img src={sub.foto_data_url} alt="bukti" className="mt-2 h-24 rounded-lg object-cover border border-gray-100" />
                   )}
                 </div>
               ))}

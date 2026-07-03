@@ -13,7 +13,7 @@ export default function Footer() {
                 <Leaf className="w-5 h-5 text-white" />
               </div>
               <div className="leading-tight">
-                <span className="font-bold text-lg text-white block leading-none">TPS RTH</span>
+                <span className="font-bold text-lg text-white block leading-none">TPST-3R RTH PBPA</span>
                 <span className="text-[10px] text-gray-400 leading-none">Pengelolaan Sampah 3R</span>
               </div>
             </Link>
@@ -47,9 +47,7 @@ export default function Footer() {
                 { href: "/", label: "Beranda" },
                 { href: "/tentang", label: "Tentang Kami" },
                 { href: "/berita", label: "Berita" },
-                { href: "/edukasi", label: "Edukasi" },
                 { href: "/kontak", label: "Kontak" },
-                { href: "/cara-daftar", label: "Cara Daftar" },
               ].map((link) => (
                 <li key={link.href}>
                   <Link
@@ -77,14 +75,14 @@ export default function Footer() {
               </li>
               <li className="flex items-center gap-2.5 text-sm">
                 <Mail className="w-4 h-4 text-[#48BB78] flex-shrink-0" />
-                <span>tpsrth.cikaret@gmail.com</span>
+                <span>tpst3rrth.pbpa@gmail.com</span>
               </li>
             </ul>
           </div>
         </div>
 
         <div className="border-t border-gray-800 mt-10 pt-6 flex flex-col sm:flex-row justify-between items-center gap-2 text-sm text-gray-500">
-          <p>© 2026 TPS RTH Cikaret. Hak cipta dilindungi.</p>
+          <p>© 2026 TPST-3R RTH PBPA. Hak cipta dilindungi.</p>
           <p>Dibuat untuk lingkungan yang lebih baik 🌿</p>
         </div>
       </div>

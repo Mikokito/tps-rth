@@ -1,118 +1,94 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { User, Mail, Phone, MapPin, Briefcase, Lock, Eye, EyeOff, Check, AlertCircle } from "lucide-react";
-import { getSession, setSession, findByEmail, verifyPassword, hashPassword, type SessionUser } from "@/lib/mockAuth";
+import { useState, useEffect, useRef } from "react";
+import { User, Phone, MapPin, Briefcase, Check, AlertCircle, Camera, LogOut } from "lucide-react";
+import { getSession, updateProfile, clearSession, type SessionUser } from "@/lib/mockAuth";
+import { useRouter } from "next/navigation";
 
-type ProfileForm = { nama: string; email: string; hp: string; alamat: string; jabatan: string };
-type PasswordForm = { passwordLama: string; passwordBaru: string; passwordConfirm: string };
+type FormState = { nama: string; hp: string; alamat: string; jabatan: string };
+
+function compressAvatar(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      const SIZE = 256;
+      const canvas = document.createElement("canvas");
+      canvas.width = SIZE; canvas.height = SIZE;
+      const ctx = canvas.getContext("2d")!;
+      const side = Math.min(img.width, img.height);
+      ctx.drawImage(img, (img.width - side) / 2, (img.height - side) / 2, side, side, 0, 0, SIZE, SIZE);
+      URL.revokeObjectURL(url);
+      resolve(canvas.toDataURL("image/jpeg", 0.82));
+    };
+    img.onerror = reject;
+    img.src = url;
+  });
+}
 
 export default function ManagerAkunPage() {
-  const [session, setSessionState] = useState<SessionUser | null>(null);
-  const [profile, setProfile] = useState<ProfileForm>({ nama: "", email: "", hp: "", alamat: "", jabatan: "" });
-  const [pass, setPass] = useState<PasswordForm>({ passwordLama: "", passwordBaru: "", passwordConfirm: "" });
-  const [showPass, setShowPass] = useState({ lama: false, baru: false, confirm: false });
-  const [profileErr, setProfileErr] = useState<Partial<ProfileForm>>({});
-  const [passErr, setPassErr] = useState<Partial<PasswordForm & { general: string }>>({});
+  const router = useRouter();
+  const [session, setSession] = useState<SessionUser | null>(null);
+  const [form, setForm] = useState<FormState>({ nama: "", hp: "", alamat: "", jabatan: "" });
+  const [avatar, setAvatar] = useState("");
+  const [errors, setErrors] = useState<Partial<FormState & { general: string }>>({});
   const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    const s = getSession();
-    if (s) {
-      setSessionState(s);
-      setProfile({ nama: s.nama, email: s.email, hp: s.hp, alamat: s.alamat, jabatan: s.jabatan ?? "" });
-    }
+    getSession().then((s) => {
+      if (s) {
+        setSession(s);
+        setForm({ nama: s.nama, hp: s.hp, alamat: s.alamat, jabatan: s.jabatan ?? "" });
+        setAvatar(s.avatar_url ?? "");
+      }
+    });
   }, []);
 
-  function updateProfile(field: keyof ProfileForm) {
+  function update(field: keyof FormState) {
     return (e: React.ChangeEvent<HTMLInputElement>) => {
-      setProfile((f) => ({ ...f, [field]: e.target.value }));
-      if (profileErr[field]) setProfileErr((er) => ({ ...er, [field]: undefined }));
+      setForm((f) => ({ ...f, [field]: e.target.value }));
+      if (errors[field]) setErrors((er) => ({ ...er, [field]: undefined }));
       if (success) setSuccess("");
     };
   }
 
-  function updatePass(field: keyof PasswordForm) {
-    return (e: React.ChangeEvent<HTMLInputElement>) => {
-      setPass((f) => ({ ...f, [field]: e.target.value }));
-      if (passErr[field]) setPassErr((er) => ({ ...er, [field]: undefined }));
-      if (success) setSuccess("");
-    };
+  async function handleAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setAvatar(await compressAvatar(file));
+    if (success) setSuccess("");
   }
 
-  function validateProfile() {
-    const errs: Partial<ProfileForm> = {};
-    if (!profile.nama.trim() || profile.nama.trim().length < 2) errs.nama = "Nama minimal 2 karakter";
-    if (!profile.email.trim()) errs.email = "Email wajib diisi";
-    if (!profile.hp.trim()) errs.hp = "Nomor HP wajib diisi";
-    return errs;
-  }
-
-  function validatePass() {
-    const errs: typeof passErr = {};
-    if (!pass.passwordLama) errs.passwordLama = "Masukkan password lama";
-    if (!pass.passwordBaru) errs.passwordBaru = "Masukkan password baru";
-    else if (pass.passwordBaru.length < 6) errs.passwordBaru = "Password minimal 6 karakter";
-    if (pass.passwordBaru !== pass.passwordConfirm) errs.passwordConfirm = "Konfirmasi tidak cocok";
-    return errs;
-  }
-
-  function handleSaveProfile(e: React.SyntheticEvent<HTMLFormElement>) {
+  async function handleSave(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault();
-    const errs = validateProfile();
-    if (Object.keys(errs).length > 0) { setProfileErr(errs); return; }
+    const errs: typeof errors = {};
+    if (!form.nama.trim() || form.nama.trim().length < 2) errs.nama = "Nama minimal 2 karakter";
+    if (!form.hp.trim()) errs.hp = "Nomor HP wajib diisi";
+    if (Object.keys(errs).length > 0) { setErrors(errs); return; }
     setLoading(true);
-    setTimeout(() => {
-      if (!session) return;
-      const updated: SessionUser = {
-        ...session,
-        nama: profile.nama.trim(),
-        email: profile.email.trim().toLowerCase(),
-        hp: profile.hp.trim(),
-        alamat: profile.alamat.trim(),
-        jabatan: profile.jabatan.trim(),
-      };
-      setSession(updated);
-      setSessionState(updated);
-      setSuccess("Profil berhasil diperbarui!");
-      setLoading(false);
-    }, 500);
+    const { user, error } = await updateProfile({
+      nama: form.nama.trim(), hp: form.hp.trim(), alamat: form.alamat.trim(),
+      jabatan: form.jabatan.trim(), avatar_url: avatar || undefined,
+    });
+    if (error) { setErrors({ general: error }); setLoading(false); return; }
+    if (user) setSession(user);
+    window.dispatchEvent(new Event("session-updated"));
+    setSuccess("Profil berhasil diperbarui!");
+    setLoading(false);
   }
 
-  function handleChangePassword(e: React.SyntheticEvent<HTMLFormElement>) {
-    e.preventDefault();
-    const errs = validatePass();
-    if (Object.keys(errs).length > 0) { setPassErr(errs); return; }
-    setLoading(true);
-    setTimeout(() => {
-      const user = findByEmail(profile.email || session?.email || "");
-      if (!user || !verifyPassword(pass.passwordLama, user.passwordHash)) {
-        setPassErr({ passwordLama: "Password lama tidak sesuai" });
-        setLoading(false);
-        return;
-      }
-      const users = JSON.parse(localStorage.getItem("tps_rth_users") || "[]");
-      const updated = users.map((u: { email: string; passwordHash: string }) =>
-        u.email === user.email ? { ...u, passwordHash: hashPassword(pass.passwordBaru) } : u
-      );
-      localStorage.setItem("tps_rth_users", JSON.stringify(updated));
-      setPass({ passwordLama: "", passwordBaru: "", passwordConfirm: "" });
-      setSuccess("Password berhasil diubah!");
-      setLoading(false);
-    }, 500);
-  }
-
-  const inputCls = (err?: string) =>
+  const inputCls = (field: keyof typeof errors) =>
     `w-full pl-10 pr-4 py-3 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:border-transparent transition-shadow ${
-      err ? "border-red-300 bg-red-50 focus:ring-red-400" : "border-gray-200 bg-white focus:ring-[#2F855A]"
+      errors[field] ? "border-red-300 bg-red-50 focus:ring-red-400" : "border-gray-200 bg-white focus:ring-[#2F855A]"
     }`;
 
   return (
-    <div className="space-y-6 max-w-4xl lg:max-w-full">
+    <div className="space-y-6 max-w-3xl">
       <div>
         <h1 className="text-xl font-bold text-gray-900">Pengaturan Akun</h1>
-        <p className="text-sm text-gray-500">Perbarui informasi profil dan keamanan akun</p>
+        <p className="text-sm text-gray-500">Perbarui informasi profil Anda</p>
       </div>
 
       {success && (
@@ -121,99 +97,109 @@ export default function ManagerAkunPage() {
         </div>
       )}
 
-      <div className="grid lg:grid-cols-2 gap-6 items-start">
-        {/* Profil */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-100">
-            <h2 className="text-sm font-semibold text-gray-800">Informasi Profil</h2>
-          </div>
-          <form onSubmit={handleSaveProfile} className="p-6 space-y-4">
-            {([
-              { field: "nama"    as const, label: "Nama Lengkap", icon: <User className="w-4 h-4" />,      type: "text",  required: true  },
-              { field: "email"   as const, label: "Email",        icon: <Mail className="w-4 h-4" />,      type: "email", required: true  },
-              { field: "hp"      as const, label: "Nomor HP",     icon: <Phone className="w-4 h-4" />,     type: "tel",   required: true  },
-              { field: "jabatan" as const, label: "Jabatan",      icon: <Briefcase className="w-4 h-4" />, type: "text",  required: false },
-              { field: "alamat"  as const, label: "Alamat",       icon: <MapPin className="w-4 h-4" />,    type: "text",  required: false },
-            ]).map(({ field, label, icon, type, required }) => (
-              <div key={field}>
-                <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                  {label} {required && <span className="text-red-500">*</span>}
-                </label>
-                <div className="relative">
-                  <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">{icon}</div>
-                  <input
-                    type={type}
-                    value={profile[field]}
-                    onChange={updateProfile(field)}
-                    placeholder={label}
-                    className={inputCls(profileErr[field])}
-                  />
-                </div>
-                {profileErr[field] && <p className="mt-1 text-xs text-red-500">⚠ {profileErr[field]}</p>}
-              </div>
-            ))}
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full flex items-center justify-center gap-2 bg-[#2F855A] text-white font-semibold py-3 rounded-xl hover:bg-[#276749] transition-colors disabled:opacity-60"
-            >
-              {loading ? "Menyimpan..." : "Simpan Profil"}
-            </button>
-          </form>
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+
+        <div className="px-6 py-4 border-b border-gray-100">
+          <h2 className="text-sm font-semibold text-gray-800">Informasi Profil</h2>
         </div>
 
-        {/* Password */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-100">
-            <h2 className="text-sm font-semibold text-gray-800">Ubah Password</h2>
-          </div>
-          <form onSubmit={handleChangePassword} className="p-6 space-y-4">
-            {passErr.general && (
-              <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600">
-                <AlertCircle className="w-4 h-4 shrink-0" /> {passErr.general}
-              </div>
-            )}
-            {([
-              { field: "passwordLama"    as const, label: "Password Lama",        key: "lama"    as const },
-              { field: "passwordBaru"    as const, label: "Password Baru",        key: "baru"    as const },
-              { field: "passwordConfirm" as const, label: "Konfirmasi Password",  key: "confirm" as const },
-            ]).map(({ field, label, key }) => (
-              <div key={field}>
-                <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                  {label} <span className="text-red-500">*</span>
-                </label>
-                <div className="relative">
-                  <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
-                    <Lock className="w-4 h-4" />
-                  </div>
-                  <input
-                    type={showPass[key] ? "text" : "password"}
-                    value={pass[field]}
-                    onChange={updatePass(field)}
-                    placeholder={label}
-                    className={inputCls(passErr[field])}
-                  />
-                  <button
-                    type="button"
-                    tabIndex={-1}
-                    onClick={() => setShowPass((p) => ({ ...p, [key]: !p[key] }))}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                  >
-                    {showPass[key] ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
+        <form onSubmit={handleSave}>
+          <div className="flex flex-col sm:flex-row gap-0">
+
+            {/* Avatar column */}
+            <div className="flex flex-col items-center justify-start gap-3 px-8 py-8 sm:border-r border-b sm:border-b-0 border-gray-100 sm:min-w-52">
+              <input ref={fileRef} type="file" accept="image/*" title="Pilih foto profil" className="hidden" onChange={handleAvatarChange} />
+              <button
+                type="button"
+                onClick={() => fileRef.current?.click()}
+                className="relative group cursor-pointer"
+                title="Ganti foto profil"
+              >
+                <div className="w-28 h-28 rounded-full bg-[#2F855A] flex items-center justify-center overflow-hidden ring-4 ring-green-100">
+                  {avatar
+                    ? <img src={avatar} alt="Foto profil" className="w-full h-full object-cover" />
+                    : <span className="text-4xl font-bold text-white">{session?.nama?.[0] ?? "M"}</span>
+                  }
                 </div>
-                {passErr[field] && <p className="mt-1 text-xs text-red-500">⚠ {passErr[field]}</p>}
+                <div className="absolute inset-0 rounded-full bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                  <Camera className="w-6 h-6 text-white" />
+                </div>
+                <div className="absolute bottom-0.5 right-0.5 w-8 h-8 rounded-full bg-[#2F855A] border-2 border-white flex items-center justify-center shadow">
+                  <Camera className="w-3.5 h-3.5 text-white" />
+                </div>
+              </button>
+              <div className="text-center">
+                <p className="text-sm font-semibold text-gray-800">{session?.nama || "—"}</p>
+                <p className="text-xs text-gray-400 mt-0.5">{session?.jabatan || "Manajer"}</p>
               </div>
-            ))}
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full flex items-center justify-center gap-2 bg-gray-800 text-white font-semibold py-3 rounded-xl hover:bg-gray-900 transition-colors disabled:opacity-60"
-            >
-              {loading ? "Memproses..." : "Ubah Password"}
-            </button>
-          </form>
+            </div>
+
+            {/* Fields column */}
+            <div className="flex-1 p-6 space-y-4">
+              {errors.general && (
+                <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600">
+                  <AlertCircle className="w-4 h-4 shrink-0" /> {errors.general}
+                </div>
+              )}
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Nama Lengkap <span className="text-red-500">*</span></label>
+                <div className="relative">
+                  <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"><User className="w-4 h-4" /></div>
+                  <input value={form.nama} onChange={update("nama")} placeholder="Nama lengkap" className={inputCls("nama")} />
+                </div>
+                {errors.nama && <p className="mt-1 text-xs text-red-500">⚠ {errors.nama}</p>}
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Nomor HP <span className="text-red-500">*</span></label>
+                <div className="relative">
+                  <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"><Phone className="w-4 h-4" /></div>
+                  <input type="tel" value={form.hp} onChange={update("hp")} placeholder="08xx-xxxx-xxxx" className={inputCls("hp")} />
+                </div>
+                {errors.hp && <p className="mt-1 text-xs text-red-500">⚠ {errors.hp}</p>}
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Jabatan</label>
+                <div className="relative">
+                  <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"><Briefcase className="w-4 h-4" /></div>
+                  <input value={form.jabatan} onChange={update("jabatan")} placeholder="Jabatan" className={inputCls("jabatan")} />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Alamat</label>
+                <div className="relative">
+                  <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"><MapPin className="w-4 h-4" /></div>
+                  <input value={form.alamat} onChange={update("alamat")} placeholder="Alamat lengkap" className={inputCls("alamat")} />
+                </div>
+              </div>
+
+              <div className="pt-2">
+                <button type="submit" disabled={loading}
+                  className="w-full flex items-center justify-center gap-2 bg-[#2F855A] text-white font-semibold py-3 rounded-xl hover:bg-[#276749] transition-colors disabled:opacity-60">
+                  {loading ? "Menyimpan..." : "Simpan Profil"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </form>
+      </div>
+
+      {/* Logout */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 px-6 py-4 flex items-center justify-between">
+        <div>
+          <p className="text-sm font-semibold text-gray-800">Keluar dari Akun</p>
+          <p className="text-xs text-gray-400 mt-0.5">Anda akan diarahkan ke halaman login</p>
         </div>
+        <button
+          type="button"
+          onClick={async () => { await clearSession(); router.push("/login"); }}
+          className="flex items-center gap-2 text-sm font-semibold text-red-600 border border-red-200 px-4 py-2 rounded-xl hover:bg-red-50 transition-colors"
+        >
+          <LogOut className="w-4 h-4" /> Logout
+        </button>
       </div>
     </div>
   );
